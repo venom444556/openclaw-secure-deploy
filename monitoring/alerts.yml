@@ -1,0 +1,60 @@
+groups:
+  - name: openclaw.security
+    rules:
+
+      - alert: HighAPIUsage
+        expr: sum(rate(openclaw_api_tokens_total[1h])) > 1000000
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenClaw API usage spike"
+          description: "Token usage exceeded 1M/hr — possible abuse or runaway agent"
+
+      - alert: SandboxFailures
+        expr: sum(increase(openclaw_sandbox_containers_total{status="failed"}[1h])) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sandbox container failures"
+          description: "{{ $value }} sandbox failures in last hour"
+
+      - alert: AuthFailures
+        expr: sum(increase(openclaw_auth_failures_total[5m])) > 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Multiple auth failures detected"
+          description: "Possible brute-force attack — {{ $value }} failures in 5 min"
+
+      - alert: GatewayDown
+        expr: up{job="openclaw-gateway"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenClaw gateway is DOWN"
+          description: "Gateway has been unreachable for 2+ minutes"
+
+  - name: openclaw.cost
+    rules:
+
+      - alert: HourlyCostHigh
+        expr: sum(rate(openclaw_api_tokens_total{type="output"}[1h])) * 0.000075 > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API cost exceeding $20/hour"
+          description: "Current hourly burn rate: ${{ $value | humanize }}"
+
+      - alert: MonthlyCostProjectionHigh
+        expr: (sum(rate(openclaw_api_tokens_total{type="output"}[24h])) * 0.000075) * 30 > 2000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Projected monthly API cost > $2000"
+          description: "At current rate, monthly cost: ${{ $value | humanize }}"

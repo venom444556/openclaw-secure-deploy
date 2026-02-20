@@ -1,0 +1,51 @@
+[Unit]
+Description=OpenClaw AI Gateway
+Documentation=https://docs.openclaw.ai
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+# ── Security Hardening ────────────────────────────────────────
+User=openclaw
+Group=openclaw
+UMask=0077
+
+# ── Environment ───────────────────────────────────────────────
+EnvironmentFile=/home/openclaw/openclaw-secure-deploy/config/.env
+WorkingDirectory=/home/openclaw
+
+# ── Execution ─────────────────────────────────────────────────
+Type=simple
+ExecStartPre=/usr/bin/openclaw doctor
+ExecStart=/usr/bin/openclaw gateway --port 18789 --config /home/openclaw/.openclaw/openclaw.json
+ExecStop=/bin/kill -SIGTERM $MAINPID
+ExecReload=/bin/kill -SIGHUP $MAINPID
+
+# ── Restart Policy ────────────────────────────────────────────
+Restart=on-failure
+RestartSec=10s
+StartLimitInterval=5min
+StartLimitBurst=5
+
+# ── Logging ───────────────────────────────────────────────────
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-gateway
+
+# ── Resource Limits ───────────────────────────────────────────
+LimitNOFILE=65536
+MemoryMax=2G
+CPUQuota=150%
+
+# ── System Call Hardening ─────────────────────────────────────
+SystemCallFilter=~@debug @mount @obsolete @privileged @raw-io @reboot @swap
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/openclaw/.openclaw /var/log/openclaw
+CapabilityBoundingSet=~CAP_SYS_ADMIN CAP_NET_ADMIN
+
+[Install]
+WantedBy=multi-user.target

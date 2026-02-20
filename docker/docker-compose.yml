@@ -1,0 +1,133 @@
+version: '3.8'
+
+# ============================================================
+# OpenClaw Secure Deployment — Docker Compose
+# Run: docker compose up -d
+# ============================================================
+
+services:
+
+  # ── OpenClaw Gateway ──────────────────────────────────────
+  openclaw:
+    image: openclaw/openclaw:1.0.0          # Pin to specific version
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    user: "1001:1001"                         # non-root
+    # SECURITY NOTE: network_mode: host is required for loopback binding
+    # (gateway must bind to 127.0.0.1:18789). This shares the host network
+    # stack with the container. Mitigated by: cap_drop ALL, no-new-privileges,
+    # non-root user, and nginx reverse proxy blocking external access.
+    network_mode: host
+    volumes:
+      - ~/.openclaw:/home/openclaw/.openclaw  # Config, creds, sessions
+      - ../config/openclaw.json:/home/openclaw/.openclaw/openclaw.json:ro
+      - ./seccomp.json:/etc/openclaw/seccomp.json:ro
+      - /var/log/openclaw:/var/log/openclaw
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - OPENCLAW_AUTH_PASSWORD=${OPENCLAW_AUTH_PASSWORD}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE                      # Only if binding low ports
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # ── Prometheus (Metrics) ──────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v3.5.1            # Pin to specific version
+    container_name: openclaw-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"               # Loopback only
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=5GB'
+      # NOTE: --web.enable-lifecycle removed for security (allows unauthenticated shutdown).
+      # To reload config: docker kill --signal=SIGHUP openclaw-prometheus
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Grafana (Dashboard) ───────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.5.2            # Pin to specific version
+    container_name: openclaw-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"               # Loopback only — tunnel via Tailscale
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SECURITY_CONTENT_SECURITY_POLICY=true
+      - GF_SECURITY_X_CONTENT_TYPE_OPTIONS=true
+      - GF_SECURITY_X_XSS_PROTECTION=true
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - prometheus
+
+  # ── Alertmanager (Alert Routing) ────────────────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: openclaw-alertmanager
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9093:9093"                   # Loopback only
+    volumes:
+      - ../monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - prometheus
+
+  # ── n8n (Workflow Automation) ──────────────────────────────
+  n8n:
+    image: n8nio/n8n:2.8.2                       # Pin to specific version
+    container_name: openclaw-n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"                    # Loopback only
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - N8N_SECURE_COOKIE=true
+      - N8N_DIAGNOSTICS_ENABLED=false             # No telemetry
+      - WEBHOOK_URL=http://localhost:5678/
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  n8n_data:

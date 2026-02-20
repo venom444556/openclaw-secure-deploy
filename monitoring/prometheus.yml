@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'openclaw'
+
+# ── Alerting Rules ────────────────────────────────────────────
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+# ── Scrape Targets ────────────────────────────────────────────
+scrape_configs:
+
+  - job_name: 'openclaw-gateway'
+    static_configs:
+      - targets: ['localhost:18790']       # Gateway metrics port
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']        # Host system metrics
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -1,0 +1,25 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+
+receivers:
+  - name: 'default'
+    # Uncomment and configure your preferred notification method:
+    #
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/CHANGE_ME'
+    #     channel: '#openclaw-alerts'
+    #     send_resolved: true
+    #
+    # email_configs:
+    #   - to: 'your@email.com'
+    #     from: 'openclaw-alerts@yourdomain.com'
+    #     smarthost: 'smtp.yourdomain.com:587'
+    #     auth_username: 'CHANGE_ME'
+    #     auth_password: 'CHANGE_ME'

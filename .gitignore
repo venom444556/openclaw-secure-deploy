@@ -1,0 +1,33 @@
+# Secrets -- NEVER commit
+config/.env
+*.env
+.env.*
+!config/.env.example
+
+# Backup artifacts from sed -i.bak
+*.bak
+
+# Backup data
+/backups/
+
+# Logs
+*.log
+
+# Encryption artifacts
+*.gpg
+*.enc
+*.pem
+*.key
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+prometheus_data/
+grafana_data/
+
+# Editor temp files
+*.swp
+*.swo
+*~
