@@ -17,7 +17,9 @@
 networks:
   pgpclaw-internal:
     driver: bridge
-    internal: true  # No outbound internet — all external calls go through Nango proxy
+    # NOTE: On Docker Desktop (macOS), 'internal: true' blocks port publishing
+    # to the host. Port security is enforced via 127.0.0.1 bind in port mappings.
+    # Ephemeral runners use --network none for full isolation.
 
 services:
 
@@ -42,12 +44,16 @@ services:
       - ALL
     cap_add:
       - IPC_LOCK                              # Required for mlock (even with disable_mlock)
+      - SETGID                                # Required for su-exec user switch in entrypoint
+      - SETUID                                # Required for su-exec user switch in entrypoint
     security_opt:
       - no-new-privileges:true
     networks:
       - pgpclaw-internal
+    environment:
+      BAO_ADDR: "http://127.0.0.1:8200"
     healthcheck:
-      test: ["CMD-SHELL", "bao status -format=json 2>/dev/null | grep -q '\"sealed\":false' || exit 1"]
+      test: ["CMD-SHELL", "bao status -format=json 2>/dev/null | grep -q '\"sealed\": false' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

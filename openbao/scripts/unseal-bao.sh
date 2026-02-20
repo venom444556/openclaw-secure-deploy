@@ -61,7 +61,14 @@ fi
 # ── Unseal ───────────────────────────────────────────────────
 
 log "Unsealing OpenBao..."
-bao operator unseal "$UNSEAL_KEY" >/dev/null
+# Use the HTTP API directly (avoids bao CLI path issues in launchd)
+UNSEAL_RESPONSE=$(curl -sf -X PUT "${BAO_ADDR}/v1/sys/unseal" \
+  -H "Content-Type: application/json" \
+  -d "{\"key\":\"${UNSEAL_KEY}\"}" 2>/dev/null)
+
+if [[ -z "$UNSEAL_RESPONSE" ]]; then
+  err "Unseal API call failed."
+fi
 
 # ── Verify ───────────────────────────────────────────────────
 

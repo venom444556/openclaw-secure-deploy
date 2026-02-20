@@ -11,7 +11,7 @@ storage "file" {
 }
 
 listener "tcp" {
-  address     = "127.0.0.1:8200"
+  address     = "0.0.0.0:8200"   # Binds inside container; host access restricted via compose port mapping
   tls_disable = true
 }
 
