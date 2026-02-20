@@ -37,6 +37,26 @@
     "deny": ["browser", "canvas", "cron"]
   },
 
+  "plugins": {
+    "entries": {
+      "diagnostics-otel": { "enabled": true }
+    }
+  },
+
+  "diagnostics": {
+    "enabled": true,
+    "otel": {
+      "enabled": true,
+      "endpoint": "http://pgpclaw-prometheus:9090/api/v1/otlp",
+      "protocol": "http/protobuf",
+      "serviceName": "openclaw-gateway",
+      "metrics": true,
+      "traces": false,
+      "logs": false,
+      "flushIntervalMs": 15000
+    }
+  },
+
   "logging": {
     "level": "info",
     "file": "~/.openclaw/logs/gateway.log"

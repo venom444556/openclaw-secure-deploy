@@ -130,6 +130,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=30d'
       - '--storage.tsdb.retention.size=5GB'
+      - '--web.enable-otlp-receiver'
     security_opt:
       - no-new-privileges:true
     networks:

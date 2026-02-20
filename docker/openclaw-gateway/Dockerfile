@@ -31,6 +31,15 @@ ARG OPENCLAW_VERSION=2026.2.19-2
 RUN npm install -g "openclaw@${OPENCLAW_VERSION}" && \
     npm cache clean --force
 
+# Install OpenTelemetry dependencies for the diagnostics-otel extension.
+# The extension ships as source in the npm package but its @opentelemetry/*
+# dependencies aren't bundled. Strip the workspace:* devDep that prevents
+# npm install from working outside the monorepo, then install production deps.
+RUN cd /usr/local/lib/node_modules/openclaw/extensions/diagnostics-otel && \
+    node -e "const p=require('./package.json'); delete p.devDependencies; require('fs').writeFileSync('./package.json', JSON.stringify(p,null,2))" && \
+    npm install --omit=dev && \
+    npm cache clean --force
+
 # Create non-root user (1001:1001) matching docker-compose user directive
 RUN groupadd -g 1001 openclaw && \
     useradd -u 1001 -g openclaw -m -s /bin/sh openclaw
