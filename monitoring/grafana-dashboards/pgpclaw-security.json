@@ -148,7 +148,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "probe_success{service=\"nango\"} or vector(0)",
+          "expr": "probe_success{service=\"nango\"}",
           "legendFormat": "",
           "refId": "A"
         }
