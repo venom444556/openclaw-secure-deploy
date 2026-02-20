@@ -137,12 +137,12 @@ Alerts: API cost spikes, auth failures, OpenBao sealed, sandbox failures, gatewa
 | `openbao/openbao` | 2.5.0 |
 | `pgpclaw/openclaw-gateway` | local (openclaw@2026.2.19-2) |
 | `nangohq/nango-server` | hosted-0.69.30 |
-| `postgres` | 16.0-alpine |
-| `redis` | 7.2.4 |
-| `prom/prometheus` | v3.5.1 |
-| `grafana/grafana` | 11.5.2 |
-| `prom/alertmanager` | v0.27.0 |
-| `n8nio/n8n` | 2.8.2 |
+| `postgres` | 16.12-alpine |
+| `redis` | 7.4.7 |
+| `prom/prometheus` | v3.9.1 |
+| `grafana/grafana` | 12.3.3 |
+| `prom/alertmanager` | v0.31.1 |
+| `n8nio/n8n` | 2.9.1 |
 | `debian` | bookworm-slim |
 
 No `:latest` tags anywhere.

@@ -113,7 +113,7 @@ services:
 
   # ── Prometheus (Metrics) ────────────────────────────────────
   prometheus:
-    image: prom/prometheus:v3.5.1
+    image: prom/prometheus:v3.9.1
     container_name: pgpclaw-prometheus
     restart: unless-stopped
     profiles: ["monitoring", "full"]
@@ -135,7 +135,7 @@ services:
 
   # ── Grafana (Dashboard) ─────────────────────────────────────
   grafana:
-    image: grafana/grafana:11.5.2
+    image: grafana/grafana:12.3.3
     container_name: pgpclaw-grafana
     restart: unless-stopped
     profiles: ["monitoring", "full"]
@@ -162,7 +162,7 @@ services:
 
   # ── Alertmanager (Alert Routing) ────────────────────────────
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.31.1
     container_name: pgpclaw-alertmanager
     restart: unless-stopped
     profiles: ["monitoring", "full"]
@@ -179,7 +179,7 @@ services:
 
   # ── n8n (Workflow Automation) ───────────────────────────────
   n8n:
-    image: n8nio/n8n:2.8.2
+    image: n8nio/n8n:2.9.1
     container_name: pgpclaw-n8n
     restart: unless-stopped
     profiles: ["monitoring", "full"]
@@ -207,7 +207,7 @@ services:
 
   # ── Nango PostgreSQL ────────────────────────────────────────
   nango-db:
-    image: postgres:16.0-alpine
+    image: postgres:16.12-alpine
     container_name: pgpclaw-nango-db
     restart: unless-stopped
     profiles: ["oauth", "full"]
@@ -234,7 +234,7 @@ services:
 
   # ── Nango Redis ─────────────────────────────────────────────
   nango-redis:
-    image: redis:7.2.4
+    image: redis:7.4.7
     container_name: pgpclaw-nango-redis
     restart: unless-stopped
     profiles: ["oauth", "full"]
