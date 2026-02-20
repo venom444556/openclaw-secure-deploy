@@ -135,6 +135,10 @@ All Docker images are pinned for reproducible, secure deployments. Update tags i
 | `grafana/grafana` | docker-compose.yml | 11.5.2 |
 | `prom/alertmanager` | docker-compose.yml | v0.27.0 |
 
+## License
+
+This project is provided "as is" under the [MIT License](LICENSE). No warranty, express or implied. Use at your own risk.
+
 ## References
 
 - [OpenClaw Docs](https://docs.openclaw.ai)
