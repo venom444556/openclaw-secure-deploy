@@ -155,6 +155,22 @@ No `:latest` tags anywhere.
 - [`SERVICES.md`](SERVICES.md) — Running services reference
 - [`POST-DEPLOY.md`](POST-DEPLOY.md) — Post-setup configuration guide
 
+## Updating the Stack
+
+```bash
+# Check for available updates (no changes made)
+./scripts/update-stack.sh
+
+# Apply all updates (with backup + health checks + rollback)
+./scripts/update-stack.sh --apply
+
+# Update a single service
+./scripts/update-stack.sh --apply --service grafana
+
+# Rollback to previous versions
+./scripts/update-stack.sh --rollback
+```
+
 ## Things You SHOULD NOT Do
 
 - Store API keys in `.env` files — use OpenBao

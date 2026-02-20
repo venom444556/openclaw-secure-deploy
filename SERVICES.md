@@ -132,7 +132,33 @@ This backs up: OpenClaw config, OpenBao volume (encrypted), OpenBao audit logs, 
 - **Data persistence:** Named Docker volumes survive container restarts, upgrades, and `docker compose down`. Only `docker compose down -v` or `docker volume rm` destroys data.
 - **Config files:** Prometheus, Grafana, Alertmanager, and OpenBao configs are bind-mounted read-only. Changes require a service restart.
 
-## Upgrading Images
+## Updating the Stack
+
+Use the update script to check for and apply updates across all services:
+
+```bash
+# Check what updates are available (read-only, no changes)
+./scripts/update-stack.sh
+
+# Apply all available updates (runs backup first)
+./scripts/update-stack.sh --apply
+
+# Update a single service
+./scripts/update-stack.sh --apply --service grafana
+
+# Rollback to previous versions (from last snapshot)
+./scripts/update-stack.sh --rollback
+```
+
+The update script:
+- Checks Docker Hub + npm registry for latest versions
+- Runs `backup.sh` before any changes
+- Saves a version snapshot for rollback
+- Updates services one-by-one with health check validation
+- Automatically rolls back any service that fails its health check
+- Logs all actions to `~/.openclaw/logs/updates.log`
+
+### Manual Upgrade (single service)
 
 1. Update the version tag in `docker/docker-compose.yml`
 2. Pull: `docker compose -f docker/docker-compose.yml pull <service>`
