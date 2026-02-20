@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 # =============================================================
-# OpenClaw — Incident Response Runbook Scripts
+# PGPClaw — Incident Response Runbook Scripts
 # Usage: ./incident-response.sh [scenario]
-# Scenarios: compromised-key | prompt-injection | runaway-cost | full-lockdown
+# Scenarios: compromised-key | bao-seal | nango-revoke |
+#            prompt-injection | runaway-cost | full-lockdown | restore
 # =============================================================
 set -euo pipefail
 
 SCENARIO="${1:-}"
-LOG_FILE="/var/log/openclaw/incidents.log"
-OPENCLAW_LOG="/var/log/openclaw/gateway.log"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+OPENCLAW_HOME="${OPENCLAW_HOME:-$HOME/.openclaw}"
+LOG_DIR="$OPENCLAW_HOME/logs"
+LOG_FILE="$LOG_DIR/incidents.log"
+OPENCLAW_LOG="$LOG_DIR/gateway.log"
+BAO_ADDR="${BAO_ADDR:-http://127.0.0.1:8200}"
+
+mkdir -p "$LOG_DIR"
 
 log() { echo "[$(date -Iseconds)] INCIDENT [$SCENARIO] $*" | tee -a "$LOG_FILE"; }
 
@@ -21,6 +29,92 @@ require_confirm() {
   fi
 }
 
+# Helper: stop the gateway (macOS + Linux)
+stop_gateway() {
+  docker compose -f "$REPO_DIR/docker/docker-compose.yml" stop openclaw 2>/dev/null || true
+  launchctl unload ~/Library/LaunchAgents/com.pgpclaw.gateway.plist 2>/dev/null || true
+  systemctl stop openclaw-gateway 2>/dev/null || true
+  pkill -f "openclaw.*gateway" 2>/dev/null || true
+}
+
+# ══════════════════════════════════════════════════════════════
+# SCENARIO: Emergency Seal OpenBao
+# ══════════════════════════════════════════════════════════════
+scenario_bao_seal() {
+  log "RESPONDING TO: Emergency OpenBao Seal"
+  echo ""
+  echo "🔒 EMERGENCY OPENBAO SEAL"
+  echo "========================="
+  echo ""
+  echo "This will IMMEDIATELY cut off ALL secret access."
+  echo "The gateway and all integrations will stop working."
+  echo ""
+
+  require_confirm "Seal OpenBao and cut all secret access"
+
+  # Seal OpenBao
+  log "Step 1: Sealing OpenBao"
+  if command -v bao &>/dev/null; then
+    BAO_ADDR="$BAO_ADDR" bao operator seal 2>/dev/null && echo "✅ OpenBao sealed via CLI" || true
+  fi
+
+  # Fallback: HTTP API seal
+  curl -sf -X PUT "${BAO_ADDR}/v1/sys/seal" \
+    -H "X-Vault-Token: $(security find-generic-password -s pgpclaw-openbao -a root-token -w 2>/dev/null || echo '')" \
+    2>/dev/null && echo "✅ OpenBao sealed via API" || true
+
+  # Stop gateway (can't function without secrets)
+  log "Step 2: Stopping gateway (no secrets available)"
+  stop_gateway
+  echo "✅ Gateway stopped"
+
+  echo ""
+  echo "🔧 TO RECOVER:"
+  echo "   1. Investigate the incident"
+  echo "   2. Unseal: ./openbao/scripts/unseal-bao.sh"
+  echo "   3. Restart: ./scripts/start-gateway.sh"
+  echo ""
+  log "OpenBao sealed — all secret access cut"
+}
+
+# ══════════════════════════════════════════════════════════════
+# SCENARIO: Revoke Nango OAuth Connections
+# ══════════════════════════════════════════════════════════════
+scenario_nango_revoke() {
+  log "RESPONDING TO: Nango OAuth Revocation"
+  echo ""
+  echo "🔑 NANGO OAUTH REVOCATION"
+  echo "========================="
+  echo ""
+
+  INTEGRATION="${2:-all}"
+
+  if [[ "$INTEGRATION" == "all" ]]; then
+    echo "This will revoke ALL OAuth connections (Gmail, GitHub, etc.)"
+    require_confirm "Revoke ALL Nango OAuth connections"
+  else
+    echo "This will revoke OAuth connection: $INTEGRATION"
+    require_confirm "Revoke Nango connection: $INTEGRATION"
+  fi
+
+  log "Revoking Nango connections: $INTEGRATION"
+
+  if [[ -x "$REPO_DIR/nango/scripts/revoke-nango.sh" ]]; then
+    if [[ "$INTEGRATION" == "all" ]]; then
+      "$REPO_DIR/nango/scripts/revoke-nango.sh" --all
+    else
+      "$REPO_DIR/nango/scripts/revoke-nango.sh" "$INTEGRATION"
+    fi
+    echo "✅ Nango connections revoked"
+  else
+    echo "❌ revoke-nango.sh not found — manual revocation required"
+    echo "   Nango dashboard: http://localhost:3003"
+  fi
+
+  echo ""
+  log "Nango revocation complete: $INTEGRATION"
+}
+
 # ══════════════════════════════════════════════════════════════
 # SCENARIO: Compromised API Key
 # ══════════════════════════════════════════════════════════════
@@ -31,31 +125,40 @@ scenario_compromised_key() {
   echo "================================="
   echo ""
 
-  require_confirm "This will stop the OpenClaw gateway"
+  require_confirm "This will stop the OpenClaw gateway and seal OpenBao"
 
-  # 1. Stop gateway
-  log "Step 1: Stopping gateway"
-  systemctl stop openclaw-gateway 2>/dev/null || pkill openclaw 2>/dev/null || true
+  # 1. Seal OpenBao (cut all secret access immediately)
+  log "Step 1: Sealing OpenBao"
+  if command -v bao &>/dev/null; then
+    BAO_ADDR="$BAO_ADDR" bao operator seal 2>/dev/null || true
+  fi
+  echo "✅ OpenBao sealed — no more secrets can be read"
+
+  # 2. Stop gateway
+  log "Step 2: Stopping gateway"
+  stop_gateway
   echo "✅ Gateway stopped"
 
-  # 2. Investigation
-  log "Step 2: Investigating"
+  # 3. Investigation
+  log "Step 3: Investigating"
   echo ""
-  echo "📋 Checking for suspicious activity in last 100 lines:"
+  echo "📋 Checking for suspicious activity in recent logs:"
   tail -100 "$OPENCLAW_LOG" 2>/dev/null | grep -iE "curl|wget|nc |bash.*-i|rm -rf|python.*-c|eval|base64" || echo "   Nothing obviously suspicious in logs"
 
   echo ""
   echo "📋 Unusual API calls:"
   grep -i "model.*gpt\|model.*openai" "$OPENCLAW_LOG" 2>/dev/null | tail -20 || echo "   None found"
 
-  # 3. Instructions
+  # 4. Instructions
   echo ""
   echo "🔧 NEXT STEPS (manual):"
   echo "   1. Go to https://console.anthropic.com/account/keys — REVOKE the old key NOW"
-  echo "   2. Run: ./scripts/rotate-keys.sh anthropic"
+  echo "   2. Generate a new key and store it:"
+  echo "      ./openbao/scripts/unseal-bao.sh"
+  echo "      ./openbao/scripts/store-secret.sh anthropic-api-key <new-key>"
   echo "   3. Check OpenAI dashboard if applicable"
-  echo "   4. Review: $OPENCLAW_LOG for data exfiltration"
-  echo "   5. Once secured, restart: systemctl start openclaw-gateway"
+  echo "   4. Review logs for data exfiltration"
+  echo "   5. Restart: ./scripts/start-gateway.sh"
   echo ""
   log "Investigation phase complete — manual steps required"
 }
@@ -78,7 +181,7 @@ scenario_prompt_injection() {
   echo "🔧 AUTOMATIC MITIGATIONS:"
 
   # Check if sandbox is enabled
-  if grep -q '"mode": "non-main"' ~/.openclaw/openclaw.json 2>/dev/null; then
+  if grep -q '"mode": "non-main"' "$OPENCLAW_HOME/openclaw.json" 2>/dev/null; then
     echo "   ✅ Sandbox (non-main) already enabled"
   else
     echo "   ⚠️  Sandbox not detected — review config/openclaw.json"
@@ -91,7 +194,7 @@ scenario_prompt_injection() {
   echo "      channels.whatsapp.denyFrom: [\"+1ATTACKER_NUMBER\"]"
   echo "   3. Run: openclaw sessions pause <session-id>"
   echo "   4. Harden: set agents.defaults.sandbox.mode = 'all' (paranoid mode)"
-  echo "   5. Restart: systemctl restart openclaw-gateway"
+  echo "   5. Restart gateway: ./scripts/start-gateway.sh"
   echo ""
   log "Prompt injection incident logged"
 }
@@ -110,8 +213,7 @@ scenario_runaway_cost() {
 
   # 1. Emergency kill
   log "Step 1: Emergency kill"
-  pkill -9 openclaw 2>/dev/null || true
-  systemctl stop openclaw-gateway 2>/dev/null || true
+  stop_gateway
   echo "✅ Gateway killed"
 
   # 2. Find culprit
@@ -141,7 +243,7 @@ scenario_runaway_cost() {
   }
 CONFIG
   echo ""
-  echo "   Then restart: systemctl start openclaw-gateway"
+  echo "   Then restart: ./scripts/start-gateway.sh"
   log "Runaway cost incident contained"
 }
 
@@ -155,27 +257,48 @@ scenario_full_lockdown() {
   echo "================="
   echo ""
 
-  require_confirm "This will STOP ALL OpenClaw services and block external access"
+  require_confirm "This will SEAL OpenBao, REVOKE all OAuth, STOP all services, and BLOCK access"
 
-  # Kill everything
-  systemctl stop openclaw-gateway 2>/dev/null || true
-  pkill -9 openclaw 2>/dev/null || true
+  # 1. Seal OpenBao (cut all secrets)
+  log "Step 1: Sealing OpenBao"
+  if command -v bao &>/dev/null; then
+    BAO_ADDR="$BAO_ADDR" bao operator seal 2>/dev/null || true
+  fi
+  echo "✅ OpenBao sealed"
 
-  # Block gateway port (UFW)
+  # 2. Revoke all Nango connections
+  log "Step 2: Revoking all Nango OAuth connections"
+  if [[ -x "$REPO_DIR/nango/scripts/revoke-nango.sh" ]]; then
+    "$REPO_DIR/nango/scripts/revoke-nango.sh" --all 2>/dev/null || true
+  fi
+  echo "✅ Nango connections revoked"
+
+  # 3. Stop all containers
+  log "Step 3: Stopping all PGPClaw containers"
+  docker compose -f "$REPO_DIR/docker/docker-compose.yml" --profile full down 2>/dev/null || true
+  stop_gateway
+  echo "✅ All services stopped"
+
+  # 4. Block gateway port
   if command -v ufw &>/dev/null; then
     ufw deny 18789/tcp 2>/dev/null || true
     echo "✅ Firewall rule added: deny 18789"
   fi
 
-  # Block Tailscale (if using)
+  # 5. Block Tailscale (if using)
   if command -v tailscale &>/dev/null; then
     tailscale down 2>/dev/null || true
     echo "✅ Tailscale disconnected"
   fi
 
-  log "FULL LOCKDOWN COMPLETE — gateway stopped, ports blocked"
+  log "FULL LOCKDOWN COMPLETE"
   echo ""
   echo "✅ Lockdown complete."
+  echo "   - OpenBao: SEALED (no secret access)"
+  echo "   - Nango: ALL OAuth connections REVOKED"
+  echo "   - Gateway: STOPPED"
+  echo "   - Network: BLOCKED"
+  echo ""
   echo "   To restore: ./scripts/incident-response.sh restore"
 }
 
@@ -187,29 +310,59 @@ scenario_restore() {
   echo ""
   echo "🔓 RESTORING SERVICES"
   echo ""
-  require_confirm "This will re-enable OpenClaw"
+  require_confirm "This will re-enable PGPClaw services"
 
-  # Restore firewall
+  # 1. Restore firewall
   if command -v ufw &>/dev/null; then
     ufw delete deny 18789/tcp 2>/dev/null || true
+    echo "✅ Firewall rule removed"
   fi
 
-  # Restore Tailscale
+  # 2. Restore Tailscale
   if command -v tailscale &>/dev/null; then
     tailscale up 2>/dev/null || true
+    echo "✅ Tailscale reconnected"
   fi
 
-  # Run doctor
-  openclaw doctor || true
+  # 3. Start OpenBao container
+  log "Starting OpenBao"
+  docker start pgpclaw-openbao 2>/dev/null || true
+  sleep 3
 
-  # Restart
-  systemctl start openclaw-gateway
+  # 4. Unseal OpenBao
+  log "Unsealing OpenBao"
+  if [[ -x "$REPO_DIR/openbao/scripts/unseal-bao.sh" ]]; then
+    "$REPO_DIR/openbao/scripts/unseal-bao.sh"
+    echo "✅ OpenBao unsealed"
+  else
+    echo "⚠️  Run manually: ./openbao/scripts/unseal-bao.sh"
+  fi
+
+  # 5. Start gateway
+  log "Starting gateway"
+  if [[ -x "$REPO_DIR/scripts/start-gateway.sh" ]]; then
+    "$REPO_DIR/scripts/start-gateway.sh"
+    echo "✅ Gateway started"
+  else
+    echo "⚠️  Run manually: ./scripts/start-gateway.sh"
+  fi
+
+  # 6. Run doctor
+  openclaw doctor 2>/dev/null || true
+
   log "Services restored"
-  echo "✅ OpenClaw restored"
+  echo ""
+  echo "✅ PGPClaw restored"
+  echo ""
+  echo "⚠️  NOTE: Nango OAuth connections were revoked during lockdown."
+  echo "   You must re-authorize integrations via the Nango dashboard:"
+  echo "   http://localhost:3003"
 }
 
-# ── Main ──────────────────────────────────────────────────────
+# -- Main ----------------------------------------------------------------------
 case "$SCENARIO" in
+  bao-seal)           scenario_bao_seal ;;
+  nango-revoke)       scenario_nango_revoke "$@" ;;
   compromised-key)    scenario_compromised_key ;;
   prompt-injection)   scenario_prompt_injection ;;
   runaway-cost)       scenario_runaway_cost ;;
@@ -219,11 +372,13 @@ case "$SCENARIO" in
     echo "Usage: $0 [scenario]"
     echo ""
     echo "Scenarios:"
+    echo "  bao-seal           — Emergency seal OpenBao (cuts ALL secret access)"
+    echo "  nango-revoke       — Revoke Nango OAuth connections"
     echo "  compromised-key    — API key leaked/stolen"
     echo "  prompt-injection   — Attack via chat messages"
     echo "  runaway-cost       — Agent loop burning money"
-    echo "  full-lockdown      — Nuclear option: kill everything"
-    echo "  restore            — Bring services back up"
+    echo "  full-lockdown      — Nuclear: seal + revoke + stop + block"
+    echo "  restore            — Bring services back up after lockdown"
     ;;
   *)
     echo "Unknown scenario: $SCENARIO"

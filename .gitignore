@@ -23,9 +23,16 @@ config/.env
 .DS_Store
 Thumbs.db
 
-# Docker volumes
+# Docker volumes (local data)
 prometheus_data/
 grafana_data/
+n8n_data/
+openbao_data/
+nango_db_data/
+nango_redis_data/
+
+# OpenBao data (never commit vault data)
+openbao/data/
 
 # Editor temp files
 *.swp

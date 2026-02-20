@@ -2,9 +2,9 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'openclaw'
+    monitor: 'pgpclaw'
 
-# ── Alerting Rules ────────────────────────────────────────────
+# -- Alerting Rules -----------------------------------------------------------
 rule_files:
   - /etc/prometheus/alerts.yml
 
@@ -13,7 +13,7 @@ alerting:
     - static_configs:
         - targets: ['localhost:9093']
 
-# ── Scrape Targets ────────────────────────────────────────────
+# -- Scrape Targets ------------------------------------------------------------
 scrape_configs:
 
   - job_name: 'openclaw-gateway'
@@ -29,3 +29,20 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  # -- OpenBao Metrics ---------------------------------------------------------
+  # OpenBao exposes /v1/sys/metrics in Prometheus format.
+  # NOTE: Requires a token with read on sys/metrics. If auth is enforced
+  # on /v1/sys/metrics, add bearer_token_file or basic_auth below.
+  # For now we scrape the unauthenticated health endpoint and rely on
+  # the sealed/unsealed alert from the custom health-check exporter.
+  - job_name: 'openbao'
+    metrics_path: '/v1/sys/metrics'
+    params:
+      format: ['prometheus']
+    static_configs:
+      - targets: ['localhost:8200']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # If OpenBao requires a token for metrics:
+    # bearer_token_file: /etc/prometheus/openbao-metrics-token

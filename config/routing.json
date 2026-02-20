@@ -1,0 +1,35 @@
+{
+  "_comment": "PGPClaw — 4-Tier Routing Configuration",
+
+  "tiers": {
+    "1_direct": {
+      "description": "Direct API calls — no proxy needed",
+      "examples": ["Anthropic Claude API", "OpenAI API"],
+      "routing": "Direct via API key from OpenBao",
+      "network": "Host network (loopback)"
+    },
+    "2_nango_proxy": {
+      "description": "OAuth-protected APIs routed through Nango",
+      "examples": ["Gmail", "GitHub", "Google Drive", "Notion", "Slack"],
+      "routing": "Via Nango proxy at http://localhost:3003/proxy/{provider}/{endpoint}",
+      "network": "pgpclaw-internal Docker network",
+      "headers": {
+        "Authorization": "Bearer {nango-secret-key}",
+        "Connection-Id": "{connection-id}",
+        "Provider-Config-Key": "{provider-name}"
+      }
+    },
+    "3_ephemeral_isolated": {
+      "description": "Code execution in ephemeral containers with NO network",
+      "examples": ["Python scripts", "Shell commands", "Data processing"],
+      "routing": "docker run --rm --network none pgpclaw/ephemeral-runner:local",
+      "network": "None (fully isolated)"
+    },
+    "4_ephemeral_networked": {
+      "description": "Ephemeral containers with access to Nango proxy only",
+      "examples": ["Tasks that need OAuth API access + code execution"],
+      "routing": "docker run --rm --network pgpclaw-internal pgpclaw/ephemeral-runner:local",
+      "network": "pgpclaw-internal (can reach Nango, cannot reach internet directly)"
+    }
+  }
+}

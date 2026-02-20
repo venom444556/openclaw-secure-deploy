@@ -1,139 +1,168 @@
-# OpenClaw Secure Deployment Kit
+# PGPClaw
 
-Production-hardened deployment package for OpenClaw. Based on the OpenClaw Knowledge Base and Advanced Deployment Playbook.
+Hardened AI gateway security layer for OpenClaw. Zero secrets on disk, agent-opaque OAuth, ephemeral execution.
 
-## What's In The Box
+## What Is PGPClaw?
+
+PGPClaw wraps OpenClaw with three security components:
+
+1. **OpenBao** (secrets broker) — API keys live in a vault, not in `.env` files. The agent requests short-lived tokens that are revoked after use.
+2. **Nango** (OAuth proxy) — OAuth integrations (Gmail, GitHub, etc.) route through a proxy. The agent never sees raw OAuth tokens.
+3. **Ephemeral Runner** — Every code execution task runs in a `docker run --rm` container that is destroyed on completion. No persistent artifacts.
+
+## Architecture
 
 ```
-openclaw-secure-deploy/
-├── config/
-│   ├── openclaw.json          # Hardened gateway config (sandbox, rate limits, injection defense)
-│   ├── nginx.conf             # Reverse proxy with rate limiting + TLS hardening
-│   └── .env.example           # API keys template (copy → .env, never commit)
-├── docker/
-│   ├── docker-compose.yml     # OpenClaw + Prometheus + Grafana + Alertmanager stack
-│   └── seccomp.json           # Docker syscall whitelist for sandboxed sessions
-├── monitoring/
-│   ├── prometheus.yml         # Scrape config
-│   ├── alerts.yml             # Alert rules (cost spikes, auth failures, sandbox failures)
-│   ├── alertmanager.yml       # Alert routing config (Slack/email notifications)
-│   └── grafana-datasources.yml
-├── systemd/
-│   └── openclaw-gateway.service  # Hardened systemd unit (non-root, resource limits)
-└── scripts/
-    ├── setup.sh               # Master install script
-    ├── backup.sh              # Encrypted daily backups (local + optional S3)
-    ├── rotate-keys.sh         # API key rotation with zero-downtime restart
-    └── incident-response.sh   # Runbook automation for common incidents
+ User (Telegram / WhatsApp / Discord)
+         │
+         ▼
+   OpenClaw Gateway (secureclaw user, loopback only)
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+  OpenBao    Nango Proxy
+  (secrets)  (OAuth)
+    │         │
+    │    ┌────┤
+    │    │    │
+    │    ▼    ▼
+    │  Gmail  GitHub  Notion ...
+    │
+    ▼
+  Ephemeral Runner (--rm)
+  [spawned per task, destroyed on completion]
 ```
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram.
 
 ## Quick Start
 
 ```bash
-# 1. Clone / extract this package
-cd openclaw-secure-deploy
+# 1. Clone
+git clone https://github.com/venom444556/pgpclaw.git
+cd pgpclaw
 
-# 2. Run setup (production mode)
-sudo ./scripts/setup.sh --production
+# 2. Run setup (creates secureclaw user, bootstraps OpenBao, builds runner)
+./scripts/setup.sh --profile core
 
-# 3. Fill in your API keys
-nano config/.env
+# 3. Store your first API key
+./openbao/scripts/store-secret.sh anthropic-api-key sk-ant-YOUR-KEY
 
-# 4. Update allowlists in openclaw config
-nano ~/.openclaw/openclaw.json
+# 4. Start the gateway
+./scripts/start-gateway.sh core
 
-# 5. Pull sandbox image + run health check
-docker pull openclaw/sandbox:1.0.0
-openclaw doctor
-
-# 6. Start
-systemctl start openclaw-gateway
+# 5. Verify
+curl http://localhost:18789/health
 ```
+
+**Dry-run first:**
+```bash
+DRY_RUN=true ./scripts/setup.sh --profile core
+```
+
+## Profiles
+
+| Profile | Services | Use Case |
+|---------|----------|----------|
+| `core` | OpenBao + OpenClaw Gateway | Minimal secure deployment |
+| `monitoring` | + Prometheus, Grafana, Alertmanager, n8n | Observability |
+| `oauth` | + Nango, Postgres, Redis | OAuth integrations |
+| `full` | Everything | Complete stack |
 
 ## Security Posture
 
-This config implements **defense-in-depth** across 5 layers:
-
-| Layer | What | Config |
-|-------|------|--------|
-| **1. Channel Access** | DM pairing required, no open inbound | `channels.*.dmPolicy = "pairing"` |
-| **2. Sandboxing** | Non-main sessions run in Docker with no-net, read-only FS, seccomp | `agents.defaults.sandbox` |
-| **3. Network** | Gateway bound to loopback only, Tailscale for remote access | `gateway.bind = "loopback"` |
-| **4. Credentials** | Env vars only, never in config files, encrypted backups | `.env` + GPG backup |
-| **5. Monitoring** | Cost caps, auth failure alerts, suspicious exec detection | `monitoring.alerts` |
-
-## Key Security Decisions
-
-**Sandbox mode = `non-main`** — Your personal DMs run on host (full power), everyone else is jailed in Docker. This is the pragmatic default; flip to `"all"` for paranoid mode.
-
-**No public ports** — Gateway never binds to `0.0.0.0`. Use Tailscale Serve for remote access. SSH tunnel as fallback.
-
-**Cost controls** — Hard cap at $20/hr, $200/day, $2000/month. Gateway pauses and alerts before you get a surprise bill.
-
-**Prompt injection defense** — Regex filters on inbound messages before they hit the model. Not bulletproof, but catches the obvious stuff.
+| Layer | Protection | Implementation |
+|-------|-----------|----------------|
+| **Secrets** | Never on disk | OpenBao vault + macOS Keychain |
+| **OAuth** | Agent-opaque tokens | Nango proxy (agent never sees token) |
+| **Execution** | Ephemeral containers | `docker run --rm --read-only --network none` |
+| **Network** | Loopback only | All ports bound to `127.0.0.1` |
+| **Identity** | Dedicated service account | `secureclaw` user (non-login, no sudo) |
+| **Monitoring** | Cost caps + auth alerts | Prometheus + Alertmanager |
 
 ## Incident Response
 
 ```bash
-# API key leaked
-./scripts/incident-response.sh compromised-key
+# Seal OpenBao (cuts ALL secret access instantly)
+./scripts/incident-response.sh bao-seal
 
-# Prompt injection attack
-./scripts/incident-response.sh prompt-injection
+# Revoke a specific OAuth integration
+./scripts/revoke-integration.sh gmail
 
-# Agent loop burning money
-./scripts/incident-response.sh runaway-cost
+# Revoke ALL OAuth connections
+./scripts/incident-response.sh nango-revoke
 
-# Nuclear option (kill everything)
+# Nuclear option: seal + revoke + stop + block
 ./scripts/incident-response.sh full-lockdown
 
-# Bring it back
+# Bring everything back
 ./scripts/incident-response.sh restore
 ```
 
-## Monitoring
+See [`docs/REVOCATION.md`](docs/REVOCATION.md) for the full emergency procedures guide.
 
-Start the full monitoring stack:
+## Secret Management
+
 ```bash
-docker compose -f docker/docker-compose.yml up -d
+# Store a secret
+./openbao/scripts/store-secret.sh anthropic-api-key sk-ant-xxx
+
+# Rotate secrets interactively
+./scripts/rotate-secrets.sh all
+
+# Seal OpenBao (emergency)
+bao operator seal
 ```
 
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (login: admin / your GRAFANA_ADMIN_PASSWORD)
-- **Alertmanager**: http://localhost:9093
+Secrets are stored in OpenBao KV-v2. The unseal key lives in macOS Keychain. **No secret is ever written to a file on disk.**
 
-Alerts fire for: API cost spikes, sandbox failures, auth brute-force, gateway downtime.
+## Monitoring
 
-## Things You MUST Change
+With the `monitoring` or `full` profile:
 
-1. `config/.env` — All API keys and passwords marked `CHANGE_ME`
-2. `config/openclaw.json` — Alert email, allowFrom phone numbers
-3. `config/nginx.conf` — Your domain name + SSL cert paths
-4. `monitoring/alertmanager.yml` — Uncomment and configure Slack/email receivers
-5. `/etc/openclaw/backup-passphrase` — Add a strong passphrase (or set `GPG_RECIPIENT`)
+| Service | URL | Auth |
+|---------|-----|------|
+| Grafana | http://localhost:3000 | admin / (password in OpenBao) |
+| Prometheus | http://localhost:9090 | None |
+| Alertmanager | http://localhost:9093 | None |
+| n8n | http://localhost:5678 | Create on first launch |
 
-## Things You SHOULD NOT Do
-
-- Set `dmPolicy: "open"` — opens you to spam and injection attacks
-- Hardcode API keys in `openclaw.json` — use `.env`
-- Expose port 18789 to the internet — use Tailscale or SSH tunnel
-- Run as root in production — the systemd service uses a dedicated user
-- Skip `openclaw doctor` after changes — it catches misconfigs
-- Use the same password for Grafana and gateway — they are separate credentials
-- Use `:latest` Docker image tags — pin to specific versions for reproducible deployments
+Alerts: API cost spikes, auth failures, OpenBao sealed, sandbox failures, gateway down.
 
 ## Pinned Image Versions
 
-All Docker images are pinned for reproducible, secure deployments. Update tags in
-`docker/docker-compose.yml` and `config/openclaw.json`, then test before deploying.
+| Image | Version |
+|-------|---------|
+| `openbao/openbao` | 2.5.0 |
+| `openclaw/openclaw` | 1.0.0 |
+| `nangohq/nango-server` | hosted-0.69.30 |
+| `postgres` | 16.0-alpine |
+| `redis` | 7.2.4 |
+| `prom/prometheus` | v3.5.1 |
+| `grafana/grafana` | 11.5.2 |
+| `prom/alertmanager` | v0.27.0 |
+| `n8nio/n8n` | 2.8.2 |
+| `debian` | bookworm-slim |
 
-| Image | File | Current |
-|-------|------|---------|
-| `openclaw/openclaw` | docker-compose.yml | 1.0.0 |
-| `openclaw/sandbox` | openclaw.json | 1.0.0 |
-| `prom/prometheus` | docker-compose.yml | v3.5.1 |
-| `grafana/grafana` | docker-compose.yml | 11.5.2 |
-| `prom/alertmanager` | docker-compose.yml | v0.27.0 |
+No `:latest` tags anywhere.
+
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System design and component details
+- [`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md) — PGPClaw vs TrustClaw vs vanilla OpenClaw
+- [`docs/REVOCATION.md`](docs/REVOCATION.md) — Emergency revocation procedures
+- [`SERVICES.md`](SERVICES.md) — Running services reference
+- [`POST-DEPLOY.md`](POST-DEPLOY.md) — Post-setup configuration guide
+
+## Things You SHOULD NOT Do
+
+- Store API keys in `.env` files — use OpenBao
+- Expose any port to `0.0.0.0` — loopback only, Tailscale for remote
+- Run as root — use the `secureclaw` service account
+- Use `:latest` Docker tags — pin versions
+- Skip `openclaw doctor` after changes
+- Give `secureclaw` sudo access
 
 ## License
 
@@ -142,6 +171,6 @@ This project is provided "as is" under the [MIT License](LICENSE). No warranty, 
 ## References
 
 - [OpenClaw Docs](https://docs.openclaw.ai)
-- [Security Guide](https://docs.openclaw.ai/gateway/security)
-- [Docker Sandboxing](https://docs.openclaw.ai/install/docker)
+- [OpenBao](https://openbao.org)
+- [Nango](https://nango.dev)
 - [MCP Protocol](https://modelcontextprotocol.io)

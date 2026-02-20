@@ -1,40 +1,92 @@
-version: '3.8'
+# ============================================================
+# PGPClaw — Docker Compose (Unified Stack)
+#
+# Profiles:
+#   core       — OpenBao + OpenClaw gateway
+#   monitoring — Prometheus, Grafana, Alertmanager, n8n
+#   oauth      — Nango + PostgreSQL + Redis
+#   full       — All of the above
+#   build      — Build ephemeral runner image (not a running service)
+#
+# Usage:
+#   docker compose --profile core up -d
+#   docker compose --profile full up -d
+#   docker compose --profile build build
+# ============================================================
 
-# ============================================================
-# OpenClaw Secure Deployment — Docker Compose
-# Run: docker compose up -d
-# ============================================================
+networks:
+  pgpclaw-internal:
+    driver: bridge
+    internal: true  # No outbound internet — all external calls go through Nango proxy
 
 services:
 
-  # ── OpenClaw Gateway ──────────────────────────────────────
-  openclaw:
-    image: openclaw/openclaw:1.0.0          # Pin to specific version
-    container_name: openclaw-gateway
+  # ════════════════════════════════════════════════════════════
+  # CORE PROFILE
+  # ════════════════════════════════════════════════════════════
+
+  # ── OpenBao (Secrets Broker) ────────────────────────────────
+  openbao:
+    image: openbao/openbao:2.5.0
+    container_name: pgpclaw-openbao
     restart: unless-stopped
-    user: "1001:1001"                         # non-root
+    profiles: ["core", "full"]
+    command: server -config=/openbao/config/config.hcl
+    ports:
+      - "127.0.0.1:8200:8200"               # Loopback only — host access for scripts + gateway
+    volumes:
+      - openbao_data:/openbao/file
+      - openbao_audit:/openbao/audit
+      - ../openbao/config.hcl:/openbao/config/config.hcl:ro
+    cap_drop:
+      - ALL
+    cap_add:
+      - IPC_LOCK                              # Required for mlock (even with disable_mlock)
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    healthcheck:
+      test: ["CMD-SHELL", "bao status -format=json 2>/dev/null | grep -q '\"sealed\":false' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ── OpenClaw Gateway ────────────────────────────────────────
+  openclaw:
+    image: openclaw/openclaw:1.0.0
+    container_name: pgpclaw-gateway
+    restart: unless-stopped
+    profiles: ["core", "full"]
+    user: "1001:1001"
     # SECURITY NOTE: network_mode: host is required for loopback binding
-    # (gateway must bind to 127.0.0.1:18789). This shares the host network
-    # stack with the container. Mitigated by: cap_drop ALL, no-new-privileges,
-    # non-root user, and nginx reverse proxy blocking external access.
+    # (gateway must bind to 127.0.0.1:18789). Cannot join pgpclaw-internal.
+    # Accesses OpenBao via 127.0.0.1:8200 (host port binding).
+    # Mitigated by: cap_drop ALL, no-new-privileges, non-root user, nginx proxy.
     network_mode: host
     volumes:
-      - ~/.openclaw:/home/openclaw/.openclaw  # Config, creds, sessions
+      - ~/.openclaw:/home/openclaw/.openclaw
       - ../config/openclaw.json:/home/openclaw/.openclaw/openclaw.json:ro
       - ./seccomp.json:/etc/openclaw/seccomp.json:ro
-      - /var/log/openclaw:/var/log/openclaw
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
-      - OPENCLAW_AUTH_PASSWORD=${OPENCLAW_AUTH_PASSWORD}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+      - OPENCLAW_AUTH_PASSWORD=${OPENCLAW_AUTH_PASSWORD:-}
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    cap_add:
-      - NET_BIND_SERVICE                      # Only if binding low ports
+    depends_on:
+      openbao:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
       interval: 30s
@@ -47,13 +99,18 @@ services:
         max-size: "100m"
         max-file: "5"
 
-  # ── Prometheus (Metrics) ──────────────────────────────────
+  # ════════════════════════════════════════════════════════════
+  # MONITORING PROFILE
+  # ════════════════════════════════════════════════════════════
+
+  # ── Prometheus (Metrics) ────────────────────────────────────
   prometheus:
-    image: prom/prometheus:v3.5.1            # Pin to specific version
-    container_name: openclaw-prometheus
+    image: prom/prometheus:v3.5.1
+    container_name: pgpclaw-prometheus
     restart: unless-stopped
+    profiles: ["monitoring", "full"]
     ports:
-      - "127.0.0.1:9090:9090"               # Loopback only
+      - "127.0.0.1:9090:9090"
     volumes:
       - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ../monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -63,24 +120,25 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=30d'
       - '--storage.tsdb.retention.size=5GB'
-      # NOTE: --web.enable-lifecycle removed for security (allows unauthenticated shutdown).
-      # To reload config: docker kill --signal=SIGHUP openclaw-prometheus
     security_opt:
       - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
 
-  # ── Grafana (Dashboard) ───────────────────────────────────
+  # ── Grafana (Dashboard) ─────────────────────────────────────
   grafana:
-    image: grafana/grafana:11.5.2            # Pin to specific version
-    container_name: openclaw-grafana
+    image: grafana/grafana:11.5.2
+    container_name: pgpclaw-grafana
     restart: unless-stopped
+    profiles: ["monitoring", "full"]
     ports:
-      - "127.0.0.1:3000:3000"               # Loopback only — tunnel via Tailscale
+      - "127.0.0.1:3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ../monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
       - ../monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=http://localhost:3000
       - GF_SECURITY_CONTENT_SECURITY_POLICY=true
@@ -89,45 +147,163 @@ services:
       - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
     security_opt:
       - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
     depends_on:
       - prometheus
 
   # ── Alertmanager (Alert Routing) ────────────────────────────
   alertmanager:
     image: prom/alertmanager:v0.27.0
-    container_name: openclaw-alertmanager
+    container_name: pgpclaw-alertmanager
     restart: unless-stopped
+    profiles: ["monitoring", "full"]
     ports:
-      - "127.0.0.1:9093:9093"                   # Loopback only
+      - "127.0.0.1:9093:9093"
     volumes:
       - ../monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     security_opt:
       - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
     depends_on:
       - prometheus
 
-  # ── n8n (Workflow Automation) ──────────────────────────────
+  # ── n8n (Workflow Automation) ───────────────────────────────
   n8n:
-    image: n8nio/n8n:2.8.2                       # Pin to specific version
-    container_name: openclaw-n8n
+    image: n8nio/n8n:2.8.2
+    container_name: pgpclaw-n8n
     restart: unless-stopped
+    profiles: ["monitoring", "full"]
     ports:
-      - "127.0.0.1:5678:5678"                    # Loopback only
+      - "127.0.0.1:5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
     environment:
       - N8N_SECURE_COOKIE=true
-      - N8N_DIAGNOSTICS_ENABLED=false             # No telemetry
+      - N8N_DIAGNOSTICS_ENABLED=false
       - WEBHOOK_URL=http://localhost:5678/
     security_opt:
       - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "3"
 
+  # ════════════════════════════════════════════════════════════
+  # OAUTH PROFILE
+  # ════════════════════════════════════════════════════════════
+
+  # ── Nango PostgreSQL ────────────────────────────────────────
+  nango-db:
+    image: postgres:16.0-alpine
+    container_name: pgpclaw-nango-db
+    restart: unless-stopped
+    profiles: ["oauth", "full"]
+    environment:
+      POSTGRES_DB: nango
+      POSTGRES_USER: nango
+      POSTGRES_PASSWORD: ${NANGO_DB_PASSWORD:-changeme}
+    volumes:
+      - nango_db_data:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nango"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ── Nango Redis ─────────────────────────────────────────────
+  nango-redis:
+    image: redis:7.2.4
+    container_name: pgpclaw-nango-redis
+    restart: unless-stopped
+    profiles: ["oauth", "full"]
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - nango_redis_data:/data
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ── Nango Server (OAuth Proxy) ──────────────────────────────
+  nango-server:
+    image: nangohq/nango-server:hosted-0.69.30
+    container_name: pgpclaw-nango-server
+    restart: unless-stopped
+    profiles: ["oauth", "full"]
+    ports:
+      - "127.0.0.1:3003:3003"               # API
+      - "127.0.0.1:3009:3009"               # Connect UI
+    environment:
+      NANGO_DB_HOST: nango-db
+      NANGO_DB_PORT: "5432"
+      NANGO_DB_NAME: nango
+      NANGO_DB_USER: nango
+      NANGO_DB_PASSWORD: ${NANGO_DB_PASSWORD:-changeme}
+      NANGO_ENCRYPTION_KEY: ${NANGO_ENCRYPTION_KEY:-}
+      NANGO_SERVER_URL: "http://localhost:3003"
+      SERVER_PORT: "3003"
+      NANGO_LOGS_ENABLED: "false"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    depends_on:
+      nango-db:
+        condition: service_healthy
+      nango-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ════════════════════════════════════════════════════════════
+  # BUILD PROFILE (not a running service)
+  # ════════════════════════════════════════════════════════════
+
+  runner-build:
+    build:
+      context: ./ephemeral-runner
+      dockerfile: Dockerfile
+    image: pgpclaw/ephemeral-runner:local
+    profiles: ["build"]
+
 volumes:
   prometheus_data:
   grafana_data:
   n8n_data:
+  openbao_data:
+  openbao_audit:
+  nango_db_data:
+  nango_redis_data:

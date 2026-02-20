@@ -1,5 +1,5 @@
 groups:
-  - name: openclaw.security
+  - name: pgpclaw.security
     rules:
 
       - alert: HighAPIUsage
@@ -38,7 +38,7 @@ groups:
           summary: "OpenClaw gateway is DOWN"
           description: "Gateway has been unreachable for 2+ minutes"
 
-  - name: openclaw.cost
+  - name: pgpclaw.cost
     rules:
 
       - alert: HourlyCostHigh
@@ -58,3 +58,66 @@ groups:
         annotations:
           summary: "Projected monthly API cost > $2000"
           description: "At current rate, monthly cost: ${{ $value | humanize }}"
+
+  # -- OpenBao Alerts ----------------------------------------------------------
+  - name: pgpclaw.openbao
+    rules:
+
+      - alert: OpenBaoSealed
+        expr: openbao_core_unsealed == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenBao is SEALED"
+          description: >-
+            OpenBao has been sealed for over 1 minute. All secret access is
+            blocked. Run: ./openbao/scripts/unseal-bao.sh
+
+      - alert: OpenBaoDown
+        expr: up{job="openbao"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenBao is unreachable"
+          description: >-
+            Prometheus cannot scrape OpenBao metrics. The container may be
+            stopped. Run: docker start pgpclaw-openbao
+
+      - alert: OpenBaoHighAuthFailures
+        expr: increase(openbao_core_handle_login_request{error="true"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High OpenBao auth failure rate"
+          description: >-
+            {{ $value }} failed login attempts in 5 minutes. Possible brute-force
+            against AppRole. Review audit log: docker logs pgpclaw-openbao
+
+      - alert: OpenBaoTokenLeaseExpiry
+        expr: openbao_expire_num_leases > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenBao lease accumulation"
+          description: >-
+            {{ $value }} active leases. This may indicate leaked tokens or
+            missing revocation in ephemeral runners.
+
+  # -- Nango Alerts ------------------------------------------------------------
+  - name: pgpclaw.nango
+    rules:
+
+      - alert: NangoDown
+        expr: up{job="nango-server"} == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nango OAuth proxy is unreachable"
+          description: >-
+            Nango server has been down for 3+ minutes. OAuth-protected
+            integrations (Gmail, GitHub, etc.) are unavailable.

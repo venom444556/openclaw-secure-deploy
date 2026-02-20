@@ -1,39 +1,55 @@
 #!/usr/bin/env bash
 # =============================================================
-# OpenClaw Secure Deployment — Master Setup Script
-# Tested on: Ubuntu 22.04+, macOS 14+, Raspberry Pi OS (bookworm)
-# Usage: sudo ./setup.sh [--dev | --production]
+# PGPClaw — Master Setup Script
+# Tested on: macOS 14+, Ubuntu 22.04+, Debian 12+
+# Usage: ./setup.sh [--profile core|monitoring|oauth|full] [--dry-run]
 # =============================================================
 set -euo pipefail
 
-MODE="${1:---production}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEPLOY_DIR="$(dirname "$SCRIPT_DIR")"
-LOG_FILE="/tmp/openclaw-setup.log"
-OPENCLAW_USER="${OPENCLAW_USER:-$(whoami)}"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+PROFILE="${PGPCLAW_PROFILE:-core}"
+DRY_RUN="${DRY_RUN:-false}"
+LOG_FILE="/tmp/pgpclaw-setup.log"
+SERVICE_USER="secureclaw"
 
-# ── Colors ────────────────────────────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+# -- Parse args ----------------------------------------------------------------
+for arg in "$@"; do
+  case "$arg" in
+    --profile)    shift; PROFILE="${1:-core}" ;;
+    --dry-run)    DRY_RUN=true ;;
+    core|monitoring|oauth|full) PROFILE="$arg" ;;
+    *)            ;;
+  esac
+  shift 2>/dev/null || true
+done
+
+# -- Colors --------------------------------------------------------------------
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; BOLD='\033[1m'; NC='\033[0m'
 ok()   { echo -e "${GREEN}✅ $*${NC}"; }
 warn() { echo -e "${YELLOW}⚠️  $*${NC}"; }
 err()  { echo -e "${RED}❌ $*${NC}"; exit 1; }
 info() { echo -e "   $*"; }
+step() { echo -e "${BLUE}${BOLD}── $* ──${NC}"; }
 
 log() { echo "[$(date -Iseconds)] $*" | tee -a "$LOG_FILE"; }
+dry() { if [[ "$DRY_RUN" == "true" ]]; then echo "  [DRY-RUN] $*"; return 0; else return 1; fi; }
 
 # ══════════════════════════════════════════════════════════════
 banner() {
 cat << 'BANNER'
-  ___                  ____ _               
- / _ \ _ __   ___ _ _ / ___| | __ ___      __
-| | | | '_ \ / _ \ ' \ |   | |/ _` \ \ /\ / /
-| |_| | |_) |  __/ | | |___| | (_| |\ V  V / 
- \___/| .__/ \___|_|_|\____|_|\__,_| \_/\_/  
-      |_|      Secure Deployment Setup        
+  ____   ____ ____   ____ _
+ |  _ \ / ___|  _ \ / ___| | __ ___      __
+ | |_) | |  _| |_) | |   | |/ _` \ \ /\ / /
+ |  __/| |_| |  __/| |___| | (_| |\ V  V /
+ |_|    \____|_|    \____|_|\__,_| \_/\_/
+       Hardened AI Gateway Security Layer
 
 BANNER
-  echo "Mode: $MODE"
-  echo "Deploy dir: $DEPLOY_DIR"
+  echo "  Profile:  $PROFILE"
+  echo "  Dry-run:  $DRY_RUN"
+  echo "  Repo:     $REPO_DIR"
   echo ""
 }
 # ══════════════════════════════════════════════════════════════
@@ -50,296 +66,454 @@ detect_os() {
   log "Detected OS: $OS"
 }
 
-check_prerequisites() {
-  echo "📋 Checking prerequisites..."
+# -- Step 1: Create secureclaw service user ------------------------------------
+create_service_user() {
+  step "Creating service user: $SERVICE_USER"
 
-  # Node.js 22+
-  if command -v node &>/dev/null; then
-    NODE_VER=$(node --version | sed 's/v//' | cut -d. -f1)
-    if [[ "$NODE_VER" -ge 22 ]]; then
-      ok "Node.js $NODE_VER"
-    else
-      warn "Node.js $NODE_VER — need 22+. Upgrade: https://nodejs.org"
-    fi
+  if id "$SERVICE_USER" &>/dev/null; then
+    ok "$SERVICE_USER user already exists"
+    return
+  fi
+
+  if dry "Would create user: $SERVICE_USER"; then return; fi
+
+  if [[ "$OS" == "macos" ]]; then
+    # macOS: create a standard user (not admin, no sudo)
+    # Find next available UID above 500
+    NEXT_UID=$(dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1)
+    NEXT_UID=$((NEXT_UID + 1))
+
+    sudo dscl . -create "/Users/$SERVICE_USER"
+    sudo dscl . -create "/Users/$SERVICE_USER" UserShell /usr/bin/false
+    sudo dscl . -create "/Users/$SERVICE_USER" RealName "PGPClaw Service Account"
+    sudo dscl . -create "/Users/$SERVICE_USER" UniqueID "$NEXT_UID"
+    sudo dscl . -create "/Users/$SERVICE_USER" PrimaryGroupID 20  # staff
+    sudo dscl . -create "/Users/$SERVICE_USER" NFSHomeDirectory "/Users/$SERVICE_USER"
+    sudo mkdir -p "/Users/$SERVICE_USER"
+    sudo chown "$SERVICE_USER:staff" "/Users/$SERVICE_USER"
+    ok "Created macOS user: $SERVICE_USER (UID $NEXT_UID)"
   else
-    warn "Node.js not found — install Node.js 22+"
-    if [[ "$OS" == "ubuntu" ]] || [[ "$OS" == "debian" ]]; then
-      info "Run: curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs"
+    # Linux: create non-login system user
+    sudo useradd -r -s /usr/bin/false -m -d "/home/$SERVICE_USER" \
+      -c "PGPClaw Service Account" "$SERVICE_USER"
+    ok "Created Linux user: $SERVICE_USER"
+  fi
+}
+
+# -- Step 2: Validate hardware + security --------------------------------------
+validate_system() {
+  step "Validating system requirements"
+
+  if [[ -x "$REPO_DIR/scripts/validate-hardware.sh" ]]; then
+    "$REPO_DIR/scripts/validate-hardware.sh" || {
+      warn "Hardware validation reported issues — review above"
+    }
+  else
+    warn "validate-hardware.sh not found — skipping hardware checks"
+  fi
+}
+
+# -- Step 3: Check prerequisites -----------------------------------------------
+check_prerequisites() {
+  step "Checking prerequisites"
+  MISSING=()
+
+  # Docker (required)
+  if command -v docker &>/dev/null; then
+    ok "Docker $(docker --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+  else
+    MISSING+=("docker")
+    err "Docker not found — install from https://docs.docker.com/engine/install/"
+  fi
+
+  # Docker Compose
+  if docker compose version &>/dev/null; then
+    ok "Docker Compose $(docker compose version --short 2>/dev/null)"
+  else
+    MISSING+=("docker-compose")
+    err "Docker Compose not found — install Docker Desktop or the compose plugin"
+  fi
+
+  # bao CLI (required for OpenBao management)
+  if command -v bao &>/dev/null; then
+    ok "OpenBao CLI $(bao version 2>/dev/null | head -1)"
+  else
+    MISSING+=("bao")
+    warn "OpenBao CLI (bao) not found"
+    if [[ "$OS" == "macos" ]]; then
+      info "Install: brew install openbao"
+    else
+      info "Install: https://github.com/openbao/openbao/releases"
     fi
   fi
 
-  # Docker
-  if command -v docker &>/dev/null; then
-    ok "Docker $(docker --version | sed 's/[^0-9.]//g' | cut -d. -f1-3)"
+  # curl, jq, openssl (required)
+  for cmd in curl jq openssl; do
+    if command -v "$cmd" &>/dev/null; then
+      ok "$cmd"
+    else
+      MISSING+=("$cmd")
+      warn "$cmd not found"
+    fi
+  done
+
+  # Node.js (recommended)
+  if command -v node &>/dev/null; then
+    NODE_VER=$(node --version | sed 's/v//' | cut -d. -f1)
+    if [[ "$NODE_VER" -ge 22 ]]; then
+      ok "Node.js $(node --version)"
+    else
+      warn "Node.js $NODE_VER found — recommend 22+"
+    fi
   else
-    warn "Docker not found — required for sandboxing"
-    info "Install: https://docs.docker.com/engine/install/"
+    warn "Node.js not found — needed for OpenClaw"
+    info "Install: https://nodejs.org"
   fi
 
   # OpenClaw
   if command -v openclaw &>/dev/null; then
     ok "OpenClaw $(openclaw --version 2>/dev/null || echo 'installed')"
   else
-    warn "OpenClaw not installed"
-    info "Run: npm install -g openclaw@latest"
+    warn "OpenClaw not installed — run: npm install -g openclaw@latest"
   fi
 
-  # Tailscale (optional but recommended)
+  # Tailscale (optional)
   if command -v tailscale &>/dev/null; then
     ok "Tailscale installed"
   else
-    warn "Tailscale not found (optional but recommended for remote access)"
-    info "Install: https://tailscale.com/download"
+    info "Tailscale not found (optional, recommended for remote access)"
+  fi
+
+  if [[ ${#MISSING[@]} -gt 0 ]]; then
+    err "Missing required tools: ${MISSING[*]}"
   fi
 
   echo ""
 }
 
-setup_user() {
-  if [[ "$OPENCLAW_USER" == "root" ]]; then
-    warn "Running as root — creating openclaw system user"
-    if ! id openclaw &>/dev/null; then
-      useradd -r -s /bin/false -m -d /home/openclaw openclaw
-      ok "Created openclaw user"
-    else
-      ok "openclaw user exists"
-    fi
-    OPENCLAW_USER="openclaw"
+# -- Step 4: Validate secureclaw cannot escalate --------------------------------
+validate_security() {
+  step "Validating security constraints"
+
+  if ! id "$SERVICE_USER" &>/dev/null; then
+    warn "$SERVICE_USER user doesn't exist yet — skipping security checks"
+    return
   fi
+
+  # Check secureclaw is NOT in admin/sudo/wheel groups
+  USER_GROUPS=$(id -Gn "$SERVICE_USER" 2>/dev/null || echo "")
+  for BAD_GROUP in admin sudo wheel; do
+    if echo "$USER_GROUPS" | grep -qw "$BAD_GROUP"; then
+      err "$SERVICE_USER is in '$BAD_GROUP' group — this is a security risk"
+    fi
+  done
+  ok "$SERVICE_USER is not in privileged groups"
+
+  # Check no sudoers entry for secureclaw
+  if [[ "$OS" != "macos" ]]; then
+    if sudo grep -r "$SERVICE_USER" /etc/sudoers /etc/sudoers.d/ 2>/dev/null | grep -v "^#" | grep -q .; then
+      err "$SERVICE_USER has sudoers entry — remove it"
+    fi
+    ok "No sudoers entry for $SERVICE_USER"
+  fi
+
+  # Verify sudoers owned by root
+  if [[ -f /etc/sudoers ]]; then
+    SUDOERS_OWNER=$(stat -c '%U' /etc/sudoers 2>/dev/null || stat -f '%Su' /etc/sudoers 2>/dev/null || echo "unknown")
+    if [[ "$SUDOERS_OWNER" == "root" ]]; then
+      ok "sudoers owned by root"
+    else
+      warn "sudoers owned by '$SUDOERS_OWNER' — expected root"
+    fi
+  fi
+
+  echo ""
 }
 
+# -- Step 5: Set up directories ------------------------------------------------
 setup_directories() {
-  echo "📁 Setting up directories..."
+  step "Setting up directories"
 
-  # Resolve correct home directory (macOS uses /Users, Linux uses /home)
-  USER_HOME=$(eval echo "~$OPENCLAW_USER")
-
-  # On macOS, use user-local paths for logs and backups (no root access)
-  if [[ "$OS" == "macos" ]]; then
-    LOG_DIR="$USER_HOME/.openclaw/logs"
-    BACKUP_DIR="$USER_HOME/.openclaw/backups"
-  else
-    LOG_DIR="/var/log/openclaw"
-    BACKUP_DIR="/backups/openclaw"
-  fi
+  USER_HOME=$(eval echo "~$SERVICE_USER" 2>/dev/null || echo "$HOME")
+  OPENCLAW_HOME="$USER_HOME/.openclaw"
 
   DIRS=(
-    "$USER_HOME/.openclaw"
-    "$USER_HOME/.openclaw/credentials"
-    "$USER_HOME/.openclaw/workspace/skills"
-    "$USER_HOME/.openclaw/sessions"
-    "$USER_HOME/.openclaw/logs"
-    "$LOG_DIR"
-    "$BACKUP_DIR"
+    "$OPENCLAW_HOME"
+    "$OPENCLAW_HOME/config"
+    "$OPENCLAW_HOME/credentials"
+    "$OPENCLAW_HOME/workspace/skills"
+    "$OPENCLAW_HOME/sessions"
+    "$OPENCLAW_HOME/logs"
+    "$OPENCLAW_HOME/backups"
   )
+
+  if dry "Would create directories under $OPENCLAW_HOME"; then return; fi
 
   for dir in "${DIRS[@]}"; do
     mkdir -p "$dir"
   done
 
   # Secure permissions
-  chmod 700 "$USER_HOME/.openclaw"
-  chmod 700 "$USER_HOME/.openclaw/credentials"
+  chmod 700 "$OPENCLAW_HOME"
+  chmod 700 "$OPENCLAW_HOME/credentials"
+  chown -R "$SERVICE_USER" "$OPENCLAW_HOME" 2>/dev/null || true
 
-  ok "Directory structure created"
+  ok "Directory structure created under $OPENCLAW_HOME"
 }
 
+# -- Step 6: Build ephemeral runner image --------------------------------------
+build_runner_image() {
+  step "Building ephemeral runner image"
+
+  if dry "Would build pgpclaw/ephemeral-runner:local"; then return; fi
+
+  if [[ -f "$REPO_DIR/docker/ephemeral-runner/Dockerfile" ]]; then
+    docker build -t pgpclaw/ephemeral-runner:local \
+      "$REPO_DIR/docker/ephemeral-runner/" \
+      --quiet
+    ok "Built pgpclaw/ephemeral-runner:local"
+  else
+    warn "Ephemeral runner Dockerfile not found — skipping"
+  fi
+}
+
+# -- Step 7: Bootstrap OpenBao -------------------------------------------------
+bootstrap_openbao() {
+  step "Bootstrapping OpenBao"
+
+  if dry "Would bootstrap OpenBao (init, unseal, policies, AppRoles)"; then return; fi
+
+  # Start OpenBao container first
+  docker compose -f "$REPO_DIR/docker/docker-compose.yml" \
+    --profile core up -d openbao
+
+  # Wait for container to be healthy
+  echo "  Waiting for OpenBao to start..."
+  for i in $(seq 1 30); do
+    if curl -sf http://127.0.0.1:8200/v1/sys/health -o /dev/null 2>/dev/null; then
+      break
+    fi
+    sleep 2
+  done
+
+  # Check if already initialized
+  INIT_STATUS=$(curl -sf http://127.0.0.1:8200/v1/sys/init 2>/dev/null || echo '{}')
+  if echo "$INIT_STATUS" | grep -q '"initialized":true'; then
+    ok "OpenBao already initialized — skipping bootstrap"
+    # Just unseal if needed
+    if [[ -x "$REPO_DIR/openbao/scripts/unseal-bao.sh" ]]; then
+      "$REPO_DIR/openbao/scripts/unseal-bao.sh" || true
+    fi
+    return
+  fi
+
+  # Run bootstrap
+  if [[ -x "$REPO_DIR/openbao/scripts/bootstrap-bao.sh" ]]; then
+    "$REPO_DIR/openbao/scripts/bootstrap-bao.sh"
+    ok "OpenBao bootstrapped"
+  else
+    err "bootstrap-bao.sh not found"
+  fi
+}
+
+# -- Step 8: Set up Nango (if oauth/full profile) -----------------------------
+setup_nango() {
+  if [[ "$PROFILE" != "oauth" && "$PROFILE" != "full" ]]; then
+    info "Nango setup skipped (profile: $PROFILE)"
+    return
+  fi
+
+  step "Setting up Nango OAuth proxy"
+
+  if dry "Would run nango/scripts/setup-nango.sh"; then return; fi
+
+  if [[ -x "$REPO_DIR/nango/scripts/setup-nango.sh" ]]; then
+    "$REPO_DIR/nango/scripts/setup-nango.sh"
+    ok "Nango configured"
+  else
+    warn "setup-nango.sh not found — skipping Nango setup"
+  fi
+}
+
+# -- Step 9: Install config + seccomp -----------------------------------------
 install_config() {
-  echo "⚙️  Installing configuration..."
+  step "Installing configuration"
+
+  USER_HOME=$(eval echo "~$SERVICE_USER" 2>/dev/null || echo "$HOME")
+
+  if dry "Would install config to $USER_HOME/.openclaw/"; then return; fi
 
   OPENCLAW_CONFIG="$USER_HOME/.openclaw/openclaw.json"
 
   if [[ -f "$OPENCLAW_CONFIG" ]]; then
-    warn "openclaw.json already exists — backing up to openclaw.json.bak"
+    warn "openclaw.json already exists — backing up"
     cp "$OPENCLAW_CONFIG" "$OPENCLAW_CONFIG.bak"
   fi
 
-  cp "$DEPLOY_DIR/config/openclaw.json" "$OPENCLAW_CONFIG"
+  cp "$REPO_DIR/config/openclaw.json" "$OPENCLAW_CONFIG"
   chmod 600 "$OPENCLAW_CONFIG"
-  chown "$OPENCLAW_USER:$OPENCLAW_USER" "$OPENCLAW_CONFIG" 2>/dev/null || true
-
+  chown "$SERVICE_USER" "$OPENCLAW_CONFIG" 2>/dev/null || true
   ok "Config installed: $OPENCLAW_CONFIG"
-  warn "Edit $OPENCLAW_CONFIG to set your allowlists and alert email"
-}
 
-install_env() {
-  echo "🔐 Setting up environment..."
-
-  ENV_FILE="$DEPLOY_DIR/config/.env"
-
+  # Create .env from template if it doesn't exist
+  ENV_FILE="$REPO_DIR/config/.env"
   if [[ ! -f "$ENV_FILE" ]]; then
-    cp "$DEPLOY_DIR/config/.env.example" "$ENV_FILE"
+    cp "$REPO_DIR/config/.env.example" "$ENV_FILE"
     chmod 600 "$ENV_FILE"
-    warn ".env created from template — YOU MUST edit it with your API keys:"
-    info "  nano $ENV_FILE"
-  else
-    ok ".env already exists"
+    ok ".env created from template"
   fi
-}
 
-install_seccomp() {
-  echo "🔒 Installing seccomp profile..."
-
-  # On macOS, use user-local config dir (no root access to /etc)
+  # Install seccomp profile
   if [[ "$OS" == "macos" ]]; then
-    OPENCLAW_ETC="$USER_HOME/.openclaw/config"
+    SECCOMP_DIR="$USER_HOME/.openclaw/config"
   else
-    OPENCLAW_ETC="/etc/openclaw"
+    SECCOMP_DIR="/etc/openclaw"
   fi
-
-  mkdir -p "$OPENCLAW_ETC"
-  cp "$DEPLOY_DIR/docker/seccomp.json" "$OPENCLAW_ETC/seccomp.json"
-  ok "Seccomp profile installed: $OPENCLAW_ETC/seccomp.json"
-
-  # Create backup passphrase file if it doesn't exist
-  PASSPHRASE_FILE="$OPENCLAW_ETC/backup-passphrase"
-  if [ ! -f "$PASSPHRASE_FILE" ]; then
-    touch "$PASSPHRASE_FILE"
-    chmod 600 "$PASSPHRASE_FILE"
-    chown "$OPENCLAW_USER:$OPENCLAW_USER" "$PASSPHRASE_FILE" 2>/dev/null || true
-    warn "Backup passphrase file created: $PASSPHRASE_FILE"
-    info "  Add a strong passphrase: echo 'your-long-random-passphrase' > $PASSPHRASE_FILE"
-    info "  Or set GPG_RECIPIENT env var for GPG-based backup encryption"
-  fi
+  mkdir -p "$SECCOMP_DIR"
+  cp "$REPO_DIR/docker/seccomp.json" "$SECCOMP_DIR/seccomp.json"
+  ok "Seccomp profile installed"
 }
 
-install_systemd() {
+# -- Step 10: Install launchd / systemd ---------------------------------------
+install_service() {
+  step "Installing service auto-start"
+
+  if dry "Would install launchd/systemd services"; then return; fi
+
   if [[ "$OS" == "macos" ]]; then
-    warn "macOS detected — skipping systemd (use launchd or start manually)"
-    return
-  fi
+    LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
+    mkdir -p "$LAUNCH_AGENTS"
 
-  echo "⚙️  Installing systemd service..."
-  cp "$DEPLOY_DIR/systemd/openclaw-gateway.service" /etc/systemd/system/
-  systemctl daemon-reload
-  systemctl enable openclaw-gateway
-  ok "Systemd service installed and enabled"
-}
-
-setup_firewall() {
-  if [[ "$OS" == "macos" ]]; then
-    warn "macOS: configure firewall via System Preferences or pf"
-    return
-  fi
-
-  if command -v ufw &>/dev/null; then
-    echo "🔥 Configuring UFW firewall..."
-    ufw default deny incoming 2>/dev/null || true
-    ufw default allow outgoing 2>/dev/null || true
-    ufw allow ssh 2>/dev/null || true
-    # Allow Tailscale
-    ufw allow 41641/udp 2>/dev/null || true
-    # Note: 18789 is intentionally NOT opened — loopback only
-    ok "UFW configured (gateway port NOT exposed to internet)"
+    for PLIST in com.pgpclaw.openbao.plist com.pgpclaw.gateway.plist; do
+      if [[ -f "$REPO_DIR/launchd/$PLIST" ]]; then
+        # Replace __REPO_DIR__ placeholder with actual path
+        sed "s|__REPO_DIR__|$REPO_DIR|g" "$REPO_DIR/launchd/$PLIST" \
+          > "$LAUNCH_AGENTS/$PLIST"
+        launchctl load "$LAUNCH_AGENTS/$PLIST" 2>/dev/null || true
+        ok "Installed launchd: $PLIST"
+      fi
+    done
   else
-    warn "UFW not found — configure your firewall manually"
-    info "Block: 18789 (gateway), expose only: 22 (SSH), 41641 (Tailscale)"
+    if [[ -f "$REPO_DIR/systemd/openclaw-gateway.service" ]]; then
+      sudo cp "$REPO_DIR/systemd/openclaw-gateway.service" /etc/systemd/system/
+      sudo systemctl daemon-reload
+      sudo systemctl enable openclaw-gateway
+      ok "Systemd service installed and enabled"
+    fi
   fi
 }
 
-setup_logrotate() {
-  if [[ "$OS" == "macos" ]]; then
-    return
-  fi
-
-  echo "📄 Setting up log rotation..."
-  cat > /etc/logrotate.d/openclaw << 'LOGROTATE'
-/var/log/openclaw/*.log {
-    daily
-    rotate 30
-    compress
-    delaycompress
-    missingok
-    notifempty
-    sharedscripts
-    postrotate
-        systemctl reload openclaw-gateway 2>/dev/null || true
-    endscript
-}
-LOGROTATE
-  ok "Log rotation configured"
-}
-
-setup_backup_cron() {
-  echo "⏰ Setting up backup cron..."
-  chmod +x "$DEPLOY_DIR/scripts/backup.sh"
-  
-  CRON_JOB="0 2 * * * $DEPLOY_DIR/scripts/backup.sh >> /var/log/openclaw/backup.log 2>&1"
-  
-  # Add to cron if not already present
-  if ! crontab -l 2>/dev/null | grep -q "backup.sh"; then
-    (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
-    ok "Backup cron job added (runs at 2am daily)"
-  else
-    ok "Backup cron already configured"
-  fi
-}
-
+# -- Step 11: Make scripts executable ------------------------------------------
 make_scripts_executable() {
-  chmod +x "$DEPLOY_DIR/scripts/"*.sh
-  ok "Scripts made executable"
+  step "Making scripts executable"
+
+  if dry "Would chmod +x all scripts"; then return; fi
+
+  find "$REPO_DIR" -name "*.sh" -exec chmod +x {} \;
+  ok "All scripts made executable"
 }
 
-print_next_steps() {
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🎉 OpenClaw Secure Deployment — Setup Complete!"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "📋 REQUIRED NEXT STEPS:"
-  echo ""
-  echo "1. Edit your API keys:"
-  echo "   nano $DEPLOY_DIR/config/.env"
-  echo ""
-  echo "2. Update allowlists in OpenClaw config:"
-  echo "   nano $USER_HOME/.openclaw/openclaw.json"
-  echo "   → Set channels.whatsapp.allowFrom (your phone numbers)"
-  echo "   → Set api.costControl.notify email"
-  echo ""
-  echo "3. Pull the sandbox Docker image:"
-  echo "   docker pull openclaw/sandbox:1.0.0"
-  echo ""
-  echo "4. Run the health check:"
-  echo "   openclaw doctor"
-  echo ""
-  echo "5. Start the gateway:"
-  if [[ "$OS" != "macos" ]]; then
-  echo "   systemctl start openclaw-gateway"
-  else
-  echo "   openclaw gateway --port 18789"
+# -- Step 12: Start gateway + smoke test ---------------------------------------
+start_and_test() {
+  step "Starting gateway"
+
+  if dry "Would start gateway with profile: $PROFILE"; then return; fi
+
+  if [[ -x "$REPO_DIR/scripts/start-gateway.sh" ]]; then
+    "$REPO_DIR/scripts/start-gateway.sh" "$PROFILE" || {
+      warn "Gateway start had issues — check logs"
+    }
   fi
+
+  # Smoke test: check OpenBao is unsealed
   echo ""
-  echo "📋 OPTIONAL:"
-  echo "   Start monitoring: docker compose -f $DEPLOY_DIR/docker/docker-compose.yml up -d"
-  echo "   Grafana dashboard: http://localhost:3000"
-  echo ""
-  echo "📋 INCIDENT RESPONSE:"
-  echo "   Compromised key: ./scripts/incident-response.sh compromised-key"
-  echo "   Runaway costs:   ./scripts/incident-response.sh runaway-cost"
-  echo "   Nuclear option:  ./scripts/incident-response.sh full-lockdown"
+  echo "  Running smoke tests..."
+
+  if curl -sf http://127.0.0.1:8200/v1/sys/health 2>/dev/null | grep -q '"sealed":false'; then
+    ok "OpenBao is running and unsealed"
+  else
+    warn "OpenBao health check failed"
+  fi
+
+  # Check gateway is listening
+  if curl -sf http://127.0.0.1:18789/health -o /dev/null 2>/dev/null; then
+    ok "Gateway is responding on port 18789"
+  else
+    warn "Gateway not responding yet (may still be starting)"
+  fi
+
   echo ""
 }
 
-# ── Main ──────────────────────────────────────────────────────
+# -- Security Posture Summary --------------------------------------------------
+print_summary() {
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🎉 PGPClaw Setup Complete!"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "📊 SECURITY POSTURE:"
+  echo "   Service user:    $SERVICE_USER (non-login, no sudo)"
+  echo "   Secrets:         OpenBao (Keychain-backed unseal)"
+  echo "   API keys:        Never on disk — fetched at runtime"
+  echo "   Execution:       Ephemeral containers (--rm)"
+  echo "   Network:         Loopback only (127.0.0.1)"
+  echo "   Profile:         $PROFILE"
+  echo ""
+  echo "📋 STORE YOUR FIRST SECRET:"
+  echo "   ./openbao/scripts/store-secret.sh anthropic-api-key sk-ant-xxx"
+  echo ""
+  echo "📋 ADD MORE SECRETS:"
+  echo "   ./openbao/scripts/store-secret.sh openai-api-key sk-xxx"
+  echo "   ./openbao/scripts/store-secret.sh telegram-bot-token xxx"
+  echo "   ./openbao/scripts/store-secret.sh discord-bot-token xxx"
+  echo ""
+
+  if [[ "$PROFILE" == "oauth" || "$PROFILE" == "full" ]]; then
+    echo "📋 CONFIGURE OAUTH (Nango):"
+    echo "   Dashboard: http://localhost:3003"
+    echo "   Add providers: Gmail, GitHub, Google Drive, Notion, Slack"
+    echo ""
+  fi
+
+  if [[ "$PROFILE" == "monitoring" || "$PROFILE" == "full" ]]; then
+    echo "📋 MONITORING:"
+    echo "   Grafana:      http://localhost:3000"
+    echo "   Prometheus:   http://localhost:9090"
+    echo "   Alertmanager: http://localhost:9093"
+    echo ""
+  fi
+
+  echo "📋 INCIDENT RESPONSE:"
+  echo "   Seal vault:      ./scripts/incident-response.sh bao-seal"
+  echo "   Revoke OAuth:    ./scripts/incident-response.sh nango-revoke"
+  echo "   Compromised key: ./scripts/incident-response.sh compromised-key"
+  echo "   Full lockdown:   ./scripts/incident-response.sh full-lockdown"
+  echo ""
+  echo "📋 MANAGEMENT:"
+  echo "   Rotate secrets:  ./scripts/rotate-secrets.sh"
+  echo "   Backup:          ./scripts/backup.sh"
+  echo "   Validate:        ./scripts/validate-hardware.sh"
+  echo ""
+}
+
+# -- Main ----------------------------------------------------------------------
 banner
 detect_os
+log "PGPClaw setup starting (profile: $PROFILE, dry-run: $DRY_RUN)"
+
+create_service_user
+validate_system
 check_prerequisites
-setup_user
+validate_security
 setup_directories
-install_config
-install_env
-install_seccomp
 make_scripts_executable
+build_runner_image
+bootstrap_openbao
+setup_nango
+install_config
+install_service
+start_and_test
+print_summary
 
-if [[ "$MODE" == "--production" ]]; then
-  install_systemd
-  setup_firewall
-  setup_logrotate
-  setup_backup_cron
-else
-  warn "Dev mode — skipping systemd, firewall, logrotate, cron"
-fi
-
-print_next_steps
-
-log "Setup complete (mode: $MODE)"
+log "PGPClaw setup complete (profile: $PROFILE)"
