@@ -106,9 +106,9 @@ Every code execution task runs in a fresh container that is destroyed on complet
 
 ### 4. OpenClaw Gateway
 
-**Image:** `openclaw/openclaw:1.0.0`
+**Image:** `pgpclaw/openclaw-gateway:local` (built from `openclaw@2026.2.19-2` via npm)
 
-The gateway runs on the host network (`network_mode: host`) and serves as the AI agent interface. It accesses OpenBao via `127.0.0.1:8200`.
+The gateway runs with port mapping (`127.0.0.1:18789:18789`) and serves as the AI agent interface. On Docker Desktop (macOS), `network_mode: host` doesn't provide true host network access, so explicit port mapping is used instead.
 
 ## Network Architecture
 

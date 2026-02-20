@@ -1,182 +1,44 @@
 {
-  "_comment": "OpenClaw Secure Deployment Config — Edit values marked with [CHANGE ME]",
-
   "gateway": {
-    "bind": "loopback",
+    "mode": "local",
+    "bind": "lan",
     "port": 18789,
-    "tailscale": {
-      "mode": "serve",
-      "resetOnExit": true
-    },
     "auth": {
-      "mode": "password",
-      "allowTailscale": true
+      "mode": "password"
     }
   },
 
   "channels": {
     "whatsapp": {
       "dmPolicy": "pairing",
-      "allowFrom": [],
-      "groups": {
-        "*": { "requireMention": true }
-      }
+      "allowFrom": []
     },
     "telegram": {
       "dmPolicy": "pairing",
       "allowFrom": []
     },
     "discord": {
-      "dm": {
-        "policy": "pairing"
-      }
+      "dmPolicy": "pairing"
     }
   },
 
   "agents": {
     "defaults": {
-      "model": "anthropic/claude-opus-4-5",
-      "maxTokens": 100000,
-      "sandbox": {
-        "mode": "non-main",
-        "image": "openclaw/sandbox:1.0.0",
-        "allowTools": [
-          "bash", "process", "read", "write", "edit",
-          "sessions_list", "sessions_history", "sessions_send"
-        ],
-        "denyTools": [
-          "browser", "canvas", "nodes", "cron", "discord", "gateway"
-        ],
-        "docker": {
-          "securityOpt": [
-            "no-new-privileges:true",
-            "seccomp=/etc/openclaw/seccomp.json"
-          ],
-          "capDrop": ["ALL"],
-          "capAdd": [],
-          "readOnly": true,
-          "tmpfs": {
-            "/tmp": "rw,noexec,nosuid,size=100m"
-          },
-          "memory": "512m",
-          "cpus": "1.0",
-          "pidsLimit": 100,
-          "networkMode": "none"
-        }
+      "model": {
+        "primary": "anthropic/claude-opus-4-5"
       },
-      "promptInjectionDefense": {
-        "enabled": true,
-        "filters": [
-          "ignore.*previous.*instructions",
-          "system.*prompt",
-          "output.*raw.*prompt",
-          "sudo",
-          "jailbreak",
-          "credentials",
-          "api.key",
-          "~/.openclaw"
-        ],
-        "action": "block_and_alert"
+      "sandbox": {
+        "mode": "non-main"
       }
-    }
-  },
-
-  "models": {
-    "primary": "anthropic/claude-opus-4-5",
-    "fallback": [
-      "anthropic/claude-sonnet-4-5",
-      "ollama/llama3.2:70b"
-    ]
-  },
-
-  "sessions": {
-    "pruning": {
-      "enabled": true,
-      "maxMessages": 100,
-      "strategy": "sliding_window"
-    },
-    "maxDepth": 3
-  },
-
-  "api": {
-    "caching": {
-      "enabled": true,
-      "systemPrompt": true,
-      "skills": true,
-      "ttl": 3600
-    },
-    "costControl": {
-      "maxCostPerHour": 20,
-      "maxCostPerDay": 200,
-      "maxCostPerMonth": 2000,
-      "action": "pause_gateway",
-      "notify": ["email:[CHANGE ME: your@email.com]"]
-    },
-    "anthropic": {
-      "maxConnections": 10,
-      "keepAlive": true
     }
   },
 
   "tools": {
-    "concurrency": {
-      "enabled": true,
-      "maxParallel": 3,
-      "timeout": 30
-    }
-  },
-
-  "messages": {
-    "chunking": {
-      "enabled": true,
-      "maxLength": 1500,
-      "strategy": "sentence"
-    }
-  },
-
-  "monitoring": {
-    "alerts": [
-      {
-        "name": "High API Usage",
-        "condition": "tokens_per_hour > 1000000",
-        "action": "pause_gateway",
-        "notify": ["email:[CHANGE ME: your@email.com]"]
-      },
-      {
-        "name": "Suspicious Exec Commands",
-        "condition": "bash.command.match('rm -rf|curl.*wget|nc -l')",
-        "action": "block_session",
-        "notify": []
-      },
-      {
-        "name": "Failed Auth Attempts",
-        "condition": "auth_failures > 5 in 5m",
-        "action": "block_ip",
-        "notify": []
-      }
-    ]
+    "deny": ["browser", "canvas", "cron"]
   },
 
   "logging": {
     "level": "info",
-    "format": "json",
-    "file": "~/.openclaw/logs/gateway.log",
-    "maxSize": "100m",
-    "maxFiles": 30,
-    "compress": true
-  },
-
-  "channels_async": true,
-
-  "gdpr": {
-    "enabled": true,
-    "retention": {
-      "sessions": 90,
-      "logs": 30
-    },
-    "dataMinimization": {
-      "stripMetadata": true,
-      "anonymizeIPs": true
-    }
+    "file": "~/.openclaw/logs/gateway.log"
   }
 }

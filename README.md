@@ -135,7 +135,7 @@ Alerts: API cost spikes, auth failures, OpenBao sealed, sandbox failures, gatewa
 | Image | Version |
 |-------|---------|
 | `openbao/openbao` | 2.5.0 |
-| `openclaw/openclaw` | 1.0.0 |
+| `pgpclaw/openclaw-gateway` | local (openclaw@2026.2.19-2) |
 | `nangohq/nango-server` | hosted-0.69.30 |
 | `postgres` | 16.0-alpine |
 | `redis` | 7.2.4 |

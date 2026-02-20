@@ -6,7 +6,7 @@
 #   monitoring — Prometheus, Grafana, Alertmanager, n8n
 #   oauth      — Nango + PostgreSQL + Redis
 #   full       — All of the above
-#   build      — Build ephemeral runner image (not a running service)
+#   build      — Build ephemeral runner + gateway images (not running services)
 #
 # Usage:
 #   docker compose --profile core up -d
@@ -66,16 +66,18 @@ services:
 
   # ── OpenClaw Gateway ────────────────────────────────────────
   openclaw:
-    image: openclaw/openclaw:1.0.0
+    image: pgpclaw/openclaw-gateway:local
     container_name: pgpclaw-gateway
     restart: unless-stopped
     profiles: ["core", "full"]
     user: "1001:1001"
-    # SECURITY NOTE: network_mode: host is required for loopback binding
-    # (gateway must bind to 127.0.0.1:18789). Cannot join pgpclaw-internal.
-    # Accesses OpenBao via 127.0.0.1:8200 (host port binding).
-    # Mitigated by: cap_drop ALL, no-new-privileges, non-root user, nginx proxy.
-    network_mode: host
+    command: ["openclaw", "gateway", "run", "--password", "${OPENCLAW_AUTH_PASSWORD:-changeme}"]
+    # SECURITY NOTE: On Docker Desktop (macOS), network_mode: host doesn't work
+    # (Docker runs in a VM). We use explicit port mapping with loopback binding.
+    # Accesses OpenBao via host.docker.internal:8200 from inside the container.
+    # Mitigated by: cap_drop ALL, no-new-privileges, non-root user, 127.0.0.1 bind.
+    ports:
+      - "127.0.0.1:18789:18789"               # Gateway WebSocket + HTTP
     volumes:
       - ~/.openclaw:/home/openclaw/.openclaw
       - ../config/openclaw.json:/home/openclaw/.openclaw/openclaw.json:ro
@@ -298,6 +300,15 @@ services:
   # BUILD PROFILE (not a running service)
   # ════════════════════════════════════════════════════════════
 
+  # ── Gateway Image Build ─────────────────────────────────────
+  gateway-build:
+    build:
+      context: ./openclaw-gateway
+      dockerfile: Dockerfile
+    image: pgpclaw/openclaw-gateway:local
+    profiles: ["build"]
+
+  # ── Ephemeral Runner Image Build ───────────────────────────
   runner-build:
     build:
       context: ./ephemeral-runner

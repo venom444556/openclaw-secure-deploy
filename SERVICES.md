@@ -11,7 +11,7 @@ All services bind to `127.0.0.1` (loopback only). Use Tailscale for remote acces
 | Service | Container | Port | URL | Data |
 |---------|-----------|------|-----|------|
 | OpenBao | pgpclaw-openbao | 8200 | http://localhost:8200 | `openbao_data` volume |
-| OpenClaw Gateway | pgpclaw-openclaw | 18789 | http://localhost:18789 | `~/.openclaw/` |
+| OpenClaw Gateway | pgpclaw-gateway | 18789 | http://localhost:18789 | `~/.openclaw/` |
 
 ### Monitoring Profile (`--profile monitoring`)
 
@@ -145,7 +145,7 @@ This backs up: OpenClaw config, OpenBao volume (encrypted), OpenBao audit logs, 
 | Image | Version |
 |-------|---------|
 | `openbao/openbao` | 2.5.0 |
-| `openclaw/openclaw` | 1.0.0 |
+| `pgpclaw/openclaw-gateway` | local (openclaw@2026.2.19-2) |
 | `nangohq/nango-server` | hosted-0.69.30 |
 | `postgres` | 16.0-alpine |
 | `redis` | 7.2.4 |
