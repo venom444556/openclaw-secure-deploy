@@ -170,6 +170,7 @@ Available dashboards:
 - **PGPClaw — Stack Overview**: Service health, response times, alerts, Prometheus engine stats
 - **PGPClaw — Cost & Usage**: Token usage, model costs, channel breakdown, message processing, queue depth
 - **PGPClaw — Security**: Security posture, OpenBao health, cost anomalies, error tracking, alert history
+- **PGPClaw — Messages & Channels**: Message traffic, processing performance, webhook traffic, queue concurrency, session lifecycle
 
 ### Alert Rules
 
