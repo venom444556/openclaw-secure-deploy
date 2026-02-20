@@ -1,10 +1,12 @@
 # Post-Deploy: Adding Your API Key & Starting the Gateway
 
+> All commands below assume you're in the `openclaw-secure-deploy/` directory.
+
 ## Required
 
 1. Edit the env file:
    ```bash
-   nano /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy/config/.env
+   nano config/.env
    ```
 
 2. Replace the placeholder on line 7:
@@ -24,7 +26,6 @@
 
 5. Start the gateway:
    ```bash
-   cd /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy
    source config/.env && openclaw gateway --port 18789
    ```
 
@@ -58,7 +59,7 @@ n8n is included in the Docker stack for building automation workflows.
 
 Start it:
 ```bash
-docker compose -f /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy/docker/docker-compose.yml up -d n8n
+docker compose -f docker/docker-compose.yml up -d n8n
 ```
 
 Access at: http://localhost:5678
@@ -88,5 +89,5 @@ Already running:
 
 To restart the monitoring stack:
 ```bash
-docker compose -f /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy/docker/docker-compose.yml up -d prometheus grafana alertmanager n8n
+docker compose -f docker/docker-compose.yml up -d prometheus grafana alertmanager n8n
 ```

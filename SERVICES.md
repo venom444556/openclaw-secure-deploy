@@ -1,5 +1,7 @@
 # Running Services
 
+> All commands below assume you're in the `openclaw-secure-deploy/` directory.
+
 All services bind to `127.0.0.1` (loopback only — not accessible from the network).
 All services use `restart: unless-stopped` and will auto-start with Docker Desktop.
 
@@ -19,17 +21,17 @@ All services use `restart: unless-stopped` and will auto-start with Docker Deskt
 
 ### Start all services
 ```bash
-docker compose -f /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy/docker/docker-compose.yml up -d prometheus grafana alertmanager n8n
+docker compose -f docker/docker-compose.yml up -d prometheus grafana alertmanager n8n
 ```
 
 ### Stop all services
 ```bash
-docker compose -f /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy/docker/docker-compose.yml down
+docker compose -f docker/docker-compose.yml down
 ```
 
 ### Restart a single service
 ```bash
-docker compose -f /Users/devserver/Documents/OpenClaw/openclaw-secure-deploy/docker/docker-compose.yml restart <service>
+docker compose -f docker/docker-compose.yml restart <service>
 ```
 
 ### View logs
