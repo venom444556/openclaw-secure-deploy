@@ -11,38 +11,111 @@ rule_files:
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: ['localhost:9093']
+        - targets: ['pgpclaw-alertmanager:9093']
 
 # -- Scrape Targets ------------------------------------------------------------
+# NOTE: All targets use Docker container names (resolved via pgpclaw-internal network).
+# "localhost" inside a container refers to the container itself, not the host.
+#
+# Services with native Prometheus metrics: prometheus, grafana, alertmanager
+# Services without metrics: openbao, openclaw-gateway, n8n, nango — probed via blackbox exporter.
+
 scrape_configs:
 
-  - job_name: 'openclaw-gateway'
-    static_configs:
-      - targets: ['localhost:18790']       # Gateway metrics port
-    metrics_path: '/metrics'
-    scrape_interval: 15s
-
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['localhost:9100']        # Host system metrics
-
+  # -- Prometheus (self) -------------------------------------------------------
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  # -- OpenBao Metrics ---------------------------------------------------------
-  # OpenBao exposes /v1/sys/metrics in Prometheus format.
-  # NOTE: Requires a token with read on sys/metrics. If auth is enforced
-  # on /v1/sys/metrics, add bearer_token_file or basic_auth below.
-  # For now we scrape the unauthenticated health endpoint and rely on
-  # the sealed/unsealed alert from the custom health-check exporter.
-  - job_name: 'openbao'
-    metrics_path: '/v1/sys/metrics'
-    params:
-      format: ['prometheus']
+  # -- Grafana -----------------------------------------------------------------
+  - job_name: 'grafana'
     static_configs:
-      - targets: ['localhost:8200']
+      - targets: ['pgpclaw-grafana:3000']
+    metrics_path: '/metrics'
+
+  # -- Alertmanager ------------------------------------------------------------
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['pgpclaw-alertmanager:9093']
+    metrics_path: '/metrics'
+
+  # -- Blackbox Exporter (self-metrics) ----------------------------------------
+  - job_name: 'blackbox-exporter'
+    static_configs:
+      - targets: ['pgpclaw-blackbox:9115']
+    metrics_path: '/metrics'
+
+  # ============================================================================
+  # HTTP Probe Targets (via Blackbox Exporter)
+  # These services don't expose /metrics — we probe their health endpoints.
+  # ============================================================================
+
+  # -- Probe: OpenBao ----------------------------------------------------------
+  - job_name: 'probe-openbao'
+    metrics_path: /probe
+    params:
+      module: [http_2xx_json]
+    static_configs:
+      - targets: ['http://pgpclaw-openbao:8200/v1/sys/health']
+        labels:
+          service: openbao
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pgpclaw-blackbox:9115
+
+  # -- Probe: OpenClaw Gateway -------------------------------------------------
+  - job_name: 'probe-openclaw-gateway'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['http://pgpclaw-gateway:18789/health']
+        labels:
+          service: openclaw-gateway
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pgpclaw-blackbox:9115
+
+  # -- Probe: n8n --------------------------------------------------------------
+  - job_name: 'probe-n8n'
+    metrics_path: /probe
+    params:
+      module: [http_2xx_json]
+    static_configs:
+      - targets: ['http://pgpclaw-n8n:5678/healthz']
+        labels:
+          service: n8n
     scrape_interval: 30s
-    scrape_timeout: 10s
-    # If OpenBao requires a token for metrics:
-    # bearer_token_file: /etc/prometheus/openbao-metrics-token
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pgpclaw-blackbox:9115
+
+  # -- Probe: Nango Server -----------------------------------------------------
+  - job_name: 'probe-nango'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['http://pgpclaw-nango-server:3003/health']
+        labels:
+          service: nango
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pgpclaw-blackbox:9115

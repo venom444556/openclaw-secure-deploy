@@ -92,6 +92,8 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    networks:
+      - pgpclaw-internal
     depends_on:
       openbao:
         condition: service_healthy
@@ -176,6 +178,26 @@ services:
       - pgpclaw-internal
     depends_on:
       - prometheus
+
+  # ── Blackbox Exporter (HTTP Probing) ───────────────────────
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: pgpclaw-blackbox
+    restart: unless-stopped
+    profiles: ["monitoring", "full"]
+    volumes:
+      - ../monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - pgpclaw-internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
 
   # ── n8n (Workflow Automation) ───────────────────────────────
   n8n:

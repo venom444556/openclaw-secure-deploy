@@ -1,4 +1,70 @@
 groups:
+  # ============================================================================
+  # Service Health (Blackbox Probes)
+  # ============================================================================
+  - name: pgpclaw.health
+    rules:
+
+      - alert: ServiceDown
+        expr: probe_success == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} is DOWN"
+          description: >-
+            Health probe for {{ $labels.service }} has been failing for 2+ minutes.
+            Target: {{ $labels.instance }}
+
+      - alert: ServiceSlowResponse
+        expr: probe_duration_seconds > 5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} responding slowly"
+          description: >-
+            {{ $labels.service }} health probe taking {{ $value | humanize }}s
+            (threshold: 5s). Target: {{ $labels.instance }}
+
+      - alert: SSLCertExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL cert expiring within 30 days"
+          description: "Certificate for {{ $labels.instance }} expires in {{ $value | humanize }} seconds"
+
+  # ============================================================================
+  # Scrape Target Health
+  # ============================================================================
+  - name: pgpclaw.scrape
+    rules:
+
+      - alert: ScrapeTargetDown
+        expr: up == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scrape target {{ $labels.job }} is down"
+          description: >-
+            Prometheus cannot scrape {{ $labels.instance }} (job: {{ $labels.job }}).
+            Last error may indicate network or configuration issue.
+
+      - alert: HighScrapeLatency
+        expr: scrape_duration_seconds > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow scrape for {{ $labels.job }}"
+          description: "Scrape duration: {{ $value | humanize }}s for {{ $labels.instance }}"
+
+  # ============================================================================
+  # OpenClaw Security Alerts
+  # ============================================================================
   - name: pgpclaw.security
     rules:
 
@@ -29,15 +95,9 @@ groups:
           summary: "Multiple auth failures detected"
           description: "Possible brute-force attack — {{ $value }} failures in 5 min"
 
-      - alert: GatewayDown
-        expr: up{job="openclaw-gateway"} == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "OpenClaw gateway is DOWN"
-          description: "Gateway has been unreachable for 2+ minutes"
-
+  # ============================================================================
+  # Cost Alerts
+  # ============================================================================
   - name: pgpclaw.cost
     rules:
 
@@ -59,60 +119,80 @@ groups:
           summary: "Projected monthly API cost > $2000"
           description: "At current rate, monthly cost: ${{ $value | humanize }}"
 
-  # -- OpenBao Alerts ----------------------------------------------------------
+  # ============================================================================
+  # OpenBao Alerts
+  # ============================================================================
   - name: pgpclaw.openbao
     rules:
 
-      - alert: OpenBaoSealed
-        expr: openbao_core_unsealed == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "OpenBao is SEALED"
-          description: >-
-            OpenBao has been sealed for over 1 minute. All secret access is
-            blocked. Run: ./openbao/scripts/unseal-bao.sh
-
       - alert: OpenBaoDown
-        expr: up{job="openbao"} == 0
+        expr: probe_success{service="openbao"} == 0
         for: 2m
         labels:
           severity: critical
         annotations:
           summary: "OpenBao is unreachable"
           description: >-
-            Prometheus cannot scrape OpenBao metrics. The container may be
-            stopped. Run: docker start pgpclaw-openbao
+            OpenBao health probe has been failing for 2+ minutes.
+            The container may be stopped or sealed.
+            Check: docker logs pgpclaw-openbao
 
-      - alert: OpenBaoHighAuthFailures
-        expr: increase(openbao_core_handle_login_request{error="true"}[5m]) > 10
-        for: 1m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High OpenBao auth failure rate"
-          description: >-
-            {{ $value }} failed login attempts in 5 minutes. Possible brute-force
-            against AppRole. Review audit log: docker logs pgpclaw-openbao
+  # ============================================================================
+  # Prometheus Self-Monitoring
+  # ============================================================================
+  - name: pgpclaw.prometheus
+    rules:
 
-      - alert: OpenBaoTokenLeaseExpiry
-        expr: openbao_expire_num_leases > 100
+      - alert: PrometheusStorageFull
+        expr: (prometheus_tsdb_storage_blocks_bytes + prometheus_tsdb_wal_storage_size_bytes) / (5 * 1024 * 1024 * 1024) > 0.9
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "OpenBao lease accumulation"
-          description: >-
-            {{ $value }} active leases. This may indicate leaked tokens or
-            missing revocation in ephemeral runners.
+          summary: "Prometheus storage >90% of 5GB limit"
+          description: "Current usage: {{ $value | humanize }}% of retention limit"
 
-  # -- Nango Alerts ------------------------------------------------------------
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus config reload failed"
+          description: "Check prometheus.yml for syntax errors"
+
+      - alert: PrometheusHighMemory
+        expr: process_resident_memory_bytes{job="prometheus"} > 1 * 1024 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus using >1GB RAM"
+          description: "Current memory: {{ $value | humanize1024 }}B"
+
+  # ============================================================================
+  # Grafana Alerts
+  # ============================================================================
+  - name: pgpclaw.grafana
+    rules:
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana is unreachable"
+          description: "Grafana metrics endpoint is not responding"
+
+  # ============================================================================
+  # Nango (OAuth) Alerts
+  # ============================================================================
   - name: pgpclaw.nango
     rules:
 
       - alert: NangoDown
-        expr: up{job="nango-server"} == 0
+        expr: probe_success{service="nango"} == 0
         for: 3m
         labels:
           severity: warning
