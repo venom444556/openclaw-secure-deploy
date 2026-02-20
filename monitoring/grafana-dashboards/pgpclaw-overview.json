@@ -497,7 +497,7 @@
       "id": 12,
       "options": {
         "colorMode": "background",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
@@ -509,7 +509,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "increase(alertmanager_notifications_failed_total[1h])",
+          "expr": "sum(increase(alertmanager_notifications_failed_total[1h])) or vector(0)",
           "legendFormat": "Failed (1h)"
         }
       ]
