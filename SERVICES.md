@@ -133,6 +133,30 @@ Services are monitored in two ways:
 
 - **Native metrics**: Prometheus, Grafana, and Alertmanager expose `/metrics` endpoints (Prometheus format). Scraped directly.
 - **HTTP probes**: OpenBao, Gateway, n8n, and Nango don't expose Prometheus metrics. The Blackbox Exporter probes their health endpoints and reports `probe_success`, `probe_duration_seconds`, etc.
+- **OTLP push (OpenClaw)**: The gateway pushes rich application metrics via OpenTelemetry (OTLP/HTTP protobuf) to Prometheus's OTLP receiver. Metrics are event-driven — they appear once the gateway processes messages.
+
+### OpenClaw OTEL Metrics
+
+The `diagnostics-otel` plugin is enabled in `config/openclaw.json` and pushes metrics to Prometheus via OTLP. Available metrics:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `openclaw_tokens_total` | counter | Token usage (labels: model, channel, token type) |
+| `openclaw_cost_usd_total` | counter | Estimated model cost in USD |
+| `openclaw_run_duration_ms` | histogram | Agent run duration |
+| `openclaw_run_attempt_total` | counter | Run attempts |
+| `openclaw_context_tokens` | histogram | Context window size (used vs limit) |
+| `openclaw_message_queued_total` | counter | Messages queued for processing |
+| `openclaw_message_processed_total` | counter | Messages processed (by outcome) |
+| `openclaw_message_duration_ms` | histogram | Message processing duration |
+| `openclaw_queue_depth` | histogram | Queue depth |
+| `openclaw_queue_wait_ms` | histogram | Queue wait time |
+| `openclaw_webhook_received_total` | counter | Webhooks received |
+| `openclaw_webhook_error_total` | counter | Webhook errors |
+| `openclaw_webhook_duration_ms` | histogram | Webhook processing duration |
+| `openclaw_session_state_total` | counter | Session state transitions |
+| `openclaw_session_stuck_total` | counter | Stuck sessions detected |
+| `openclaw_session_stuck_age_ms` | histogram | Age of stuck sessions |
 
 ### Grafana Dashboards
 
@@ -144,6 +168,8 @@ Dashboards are provisioned from `monitoring/grafana-dashboards/` (read-only bind
 
 Available dashboards:
 - **PGPClaw — Stack Overview**: Service health, response times, alerts, Prometheus engine stats
+- **PGPClaw — Cost & Usage**: Token usage, model costs, channel breakdown, message processing, queue depth
+- **PGPClaw — Security**: Security posture, OpenBao health, cost anomalies, error tracking, alert history
 
 ### Alert Rules
 
