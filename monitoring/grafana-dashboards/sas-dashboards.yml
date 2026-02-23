@@ -1,13 +1,14 @@
 apiVersion: 1
 
 providers:
-  - name: PGPClaw
+  - name: "SAS Cyber Advisory"
     orgId: 1
-    folder: PGPClaw
+    folder: "SAS Cyber Advisory"
     type: file
     disableDeletion: false
     editable: true
     updateIntervalSeconds: 30
+    allowUiUpdates: true
     options:
-      path: /etc/grafana/provisioning/dashboards/pgpclaw
+      path: /etc/grafana/provisioning/dashboards/sas
       foldersFromFilesStructure: false

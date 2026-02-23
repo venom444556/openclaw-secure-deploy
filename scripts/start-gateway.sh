@@ -82,6 +82,12 @@ export TELEGRAM_BOT_TOKEN=$(fetch_secret "telegram-bot-token")
 export DISCORD_BOT_TOKEN=$(fetch_secret "discord-bot-token")
 export OPENCLAW_AUTH_PASSWORD=$(fetch_secret "openclaw-auth-password")
 export GRAFANA_ADMIN_PASSWORD=$(fetch_secret "grafana-admin-password")
+export OPENROUTER_API_KEY=$(fetch_secret "openrouter-api-key")
+
+# Council Pro secrets (direct provider APIs)
+export DEEPSEEK_API_KEY=$(fetch_secret "deepseek-api-key")
+export XAI_API_KEY=$(fetch_secret "xai-api-key")
+export GOOGLE_API_KEY=$(fetch_secret "google-api-key")
 
 # Nango secrets (only if oauth or full profile)
 if [[ "$PROFILE" == "oauth" || "$PROFILE" == "full" ]]; then
@@ -105,6 +111,10 @@ LOADED=0
 [[ -n "${GRAFANA_ADMIN_PASSWORD:-}" ]] && LOADED=$((LOADED + 1))
 [[ -n "${NANGO_ENCRYPTION_KEY:-}" ]]   && LOADED=$((LOADED + 1))
 [[ -n "${NANGO_DB_PASSWORD:-}" ]]      && LOADED=$((LOADED + 1))
+[[ -n "${OPENROUTER_API_KEY:-}" ]]    && LOADED=$((LOADED + 1))
+[[ -n "${DEEPSEEK_API_KEY:-}" ]]     && LOADED=$((LOADED + 1))
+[[ -n "${XAI_API_KEY:-}" ]]          && LOADED=$((LOADED + 1))
+[[ -n "${GOOGLE_API_KEY:-}" ]]       && LOADED=$((LOADED + 1))
 
 log "Loaded $LOADED secret(s) from OpenBao."
 

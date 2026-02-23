@@ -7,6 +7,7 @@ global:
 # -- Alerting Rules -----------------------------------------------------------
 rule_files:
   - /etc/prometheus/alerts.yml
+  - /etc/prometheus/msd-alerts.yml
 
 alerting:
   alertmanagers:
@@ -119,3 +120,69 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: pgpclaw-blackbox:9115
+
+  # ============================================================================
+  # Mac Studio Decision — Additional Scrape Targets
+  # ============================================================================
+
+  # -- Node Exporter (Host System Metrics) ------------------------------------
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['msd-node-exporter:9100']
+
+  # -- cAdvisor (Container Metrics) -------------------------------------------
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['msd-cadvisor:8080']
+
+  # -- Anthropic API Cost Tracker ---------------------------------------------
+  - job_name: 'api-tracker'
+    static_configs:
+      - targets: ['msd-api-tracker:9101']
+
+  # -- Probe: StoryFlow (native Node — host gateway 172.19.0.1) -----------------
+  # NOTE: StoryFlow binds to 127.0.0.1 by default. For this probe to succeed,
+  # restart StoryFlow with: STORYFLOW_HOST=0.0.0.0 npm run server
+  # Until then, probe_success will be 0 (DOWN) — which is correct and visible.
+  - job_name: 'probe-storyflow'
+    metrics_path: /probe
+    params:
+      module: [http_2xx_json]
+    static_configs:
+      - targets: ['http://172.19.0.1:3001/api/projects']
+        labels:
+          service: storyflow
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pgpclaw-blackbox:9115
+
+  # -- Probe: API Tracker health endpoint --------------------------------------
+  - job_name: 'probe-api-tracker'
+    metrics_path: /probe
+    params:
+      module: [http_2xx_json]
+    static_configs:
+      - targets: ['http://msd-api-tracker:9101/health']
+        labels:
+          service: api-tracker
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pgpclaw-blackbox:9115
+
+  # -- n8n Workflow Metrics (native) ------------------------------------------
+  # Requires N8N_METRICS=true on the n8n container
+  - job_name: 'n8n-metrics'
+    static_configs:
+      - targets: ['pgpclaw-n8n:5678']
+    metrics_path: /metrics
+    scrape_interval: 30s

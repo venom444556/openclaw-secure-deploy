@@ -4,7 +4,7 @@
     "bind": "lan",
     "port": 18789,
     "auth": {
-      "mode": "password"
+      "mode": "token"
     }
   },
 
@@ -25,7 +25,7 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "anthropic/claude-opus-4-5"
+        "primary": "anthropic/claude-haiku-4-5"
       },
       "sandbox": {
         "mode": "non-main"

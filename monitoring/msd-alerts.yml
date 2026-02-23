@@ -1,0 +1,119 @@
+groups:
+  # ============================================================================
+  # Mac Studio Decision — API Cost Alerts
+  # ============================================================================
+  - name: msd.api-cost
+    rules:
+
+      - alert: MSD_DailySpendHigh
+        expr: sum(rate(anthropic_api_cost_usd_total[1h])) * 3600 * 24 > 50
+        for: 10m
+        labels:
+          severity: warning
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "Daily API spend projected > $50"
+          description: "Current daily burn rate: ${{ $value | humanize }}. Review agent usage."
+
+      - alert: MSD_MonthlyProjectionHigh
+        expr: sum(rate(anthropic_api_cost_usd_total[6h])) * 3600 * 24 * 30 > 1000
+        for: 30m
+        labels:
+          severity: critical
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "Monthly API cost projected > $1,000"
+          description: "At current 6h average rate, monthly cost: ${{ $value | humanize }}"
+
+      - alert: MSD_RateLimitHigh
+        expr: >
+          sum(rate(anthropic_api_rate_limit_total[15m])) /
+          (sum(rate(anthropic_api_requests_total[15m])) > 0) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "API rate limit hit rate > 2%"
+          description: "{{ $value | humanize }}% of requests are being rate limited"
+
+  # ============================================================================
+  # Mac Studio Decision — System Resource Alerts
+  # ============================================================================
+  - name: msd.system
+    rules:
+
+      - alert: MSD_HighRAMUsage
+        expr: >
+          (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "RAM usage > 80% for 5+ minutes"
+          description: >-
+            System memory at {{ $value | humanize }}% utilization.
+            This is the primary Mac Studio justification signal.
+
+      - alert: MSD_CriticalRAMUsage
+        expr: >
+          (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "RAM usage > 95% — system under memory pressure"
+          description: "Available memory: {{ with query \"node_memory_MemAvailable_bytes\" }}{{ . | first | value | humanize1024 }}B{{ end }}"
+
+      - alert: MSD_HighCPUUsage
+        expr: >
+          100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "CPU usage > 85% sustained"
+          description: "CPU at {{ $value | humanize }}% — concurrent agent workloads may benefit from more cores"
+
+      - alert: MSD_HighDiskUsage
+        expr: >
+          (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "Disk usage > 85%"
+          description: "Root filesystem at {{ $value | humanize }}% capacity"
+
+  # ============================================================================
+  # Mac Studio Decision — Workflow Alerts
+  # ============================================================================
+  - name: msd.workflow
+    rules:
+
+      - alert: MSD_N8NHighFailureRate
+        expr: >
+          sum(rate(n8n_workflow_failed_total[30m])) /
+          (sum(rate(n8n_workflow_success_total[30m])) + sum(rate(n8n_workflow_failed_total[30m])) > 0) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "n8n workflow failure rate > 10%"
+          description: "{{ $value | humanize }}% of workflow executions are failing"
+
+      - alert: MSD_ContainerMemoryHog
+        expr: >
+          container_memory_usage_bytes{name=~".+"} > 2 * 1024 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: info
+          dashboard: mac-studio-decision
+        annotations:
+          summary: "Container {{ $labels.name }} using > 2GB RAM"
+          description: "Current memory: {{ $value | humanize1024 }}B"

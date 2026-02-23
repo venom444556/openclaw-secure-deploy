@@ -15,7 +15,7 @@
 
 FROM node:22-slim
 
-# Install minimal runtime dependencies
+# Install minimal runtime dependencies + Python for skills (e.g. Council of Reeds)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       ca-certificates \
@@ -23,8 +23,18 @@ RUN apt-get update && \
       jq \
       git \
       tini \
+      python3 \
+      python3-pip \
+      python3-venv \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# Create Python venv for skill dependencies (council, etc.)
+RUN python3 -m venv /opt/skill-venv && \
+    /opt/skill-venv/bin/pip install --no-cache-dir \
+      httpx \
+      reportlab
+ENV PATH="/opt/skill-venv/bin:$PATH"
 
 # Pin OpenClaw version — no :latest tags
 ARG OPENCLAW_VERSION=2026.2.19-2

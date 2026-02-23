@@ -1,13 +1,13 @@
 apiVersion: 1
 
 providers:
-  - name: PGPClaw
+  - name: 'Mac Studio Decision'
     orgId: 1
-    folder: PGPClaw
+    folder: 'Mac Studio Decision'
+    folderUid: 'msd-folder'
     type: file
     disableDeletion: false
     editable: true
-    updateIntervalSeconds: 30
     options:
-      path: /etc/grafana/provisioning/dashboards/pgpclaw
+      path: /etc/grafana/provisioning/dashboards/msd
       foldersFromFilesStructure: false
