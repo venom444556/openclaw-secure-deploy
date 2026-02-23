@@ -7,3 +7,24 @@ datasources:
     url: http://pgpclaw-prometheus:9090
     isDefault: true
     editable: false
+
+  - name: SAS Prometheus
+    uid: sas-prometheus-ds
+    type: prometheus
+    access: proxy
+    url: http://sas-prometheus:9090
+    isDefault: false
+    editable: false
+    jsonData:
+      timeInterval: "30s"
+      httpMethod: POST
+
+  - name: Loki
+    uid: loki-ds
+    type: loki
+    access: proxy
+    url: http://pgpclaw-loki:3100
+    isDefault: false
+    editable: false
+    jsonData:
+      maxLines: 1000

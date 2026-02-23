@@ -1,0 +1,19 @@
+apiVersion: 1
+
+# ⚠️  REPLACE_WITH_TOKEN must be updated after first OnCall boot:
+#   1. Open Grafana → Alerts & IRM → OnCall → Integrations
+#   2. Create new integration: type = Alertmanager
+#   3. Copy the webhook URL and replace REPLACE_WITH_TOKEN below
+#   4. Also update monitoring/alertmanager.yml with the same token
+#   5. Restart: docker compose --profile monitoring kill -s HUP alertmanager && restart grafana
+
+contactPoints:
+  - orgId: 1
+    name: OnCall
+    receivers:
+      - uid: oncall-webhook
+        type: webhook
+        settings:
+          url: 'http://pgpclaw-oncall:8080/integrations/v1/alertmanager/REPLACE_WITH_TOKEN/'
+          httpMethod: POST
+        disableResolveMessage: false

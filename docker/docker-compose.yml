@@ -71,7 +71,7 @@ services:
     restart: unless-stopped
     profiles: ["core", "full"]
     user: "1001:1001"
-    command: ["openclaw", "gateway", "run", "--password", "${OPENCLAW_AUTH_PASSWORD:-changeme}"]
+    command: ["openclaw", "gateway", "run", "--dev", "--auth", "token", "--token", "${OPENCLAW_AUTH_PASSWORD:-changeme}"]
     # SECURITY NOTE: On Docker Desktop (macOS), network_mode: host doesn't work
     # (Docker runs in a VM). We use explicit port mapping with loopback binding.
     # Accesses OpenBao via host.docker.internal:8200 from inside the container.
@@ -82,9 +82,16 @@ services:
       - ~/.openclaw:/home/openclaw/.openclaw
       - ../config/openclaw.json:/home/openclaw/.openclaw/openclaw.json:ro
       - ./seccomp.json:/etc/openclaw/seccomp.json:ro
+      - ~/.openclaw/skills/council:/home/openclaw/.openclaw/skills/council:ro
+      - ~/.openclaw/skills/council-pro:/home/openclaw/.openclaw/skills/council-pro:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_BASE_URL=http://msd-api-tracker:8080
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
       - OPENCLAW_AUTH_PASSWORD=${OPENCLAW_AUTH_PASSWORD:-}
@@ -148,6 +155,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ../monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
       - ../monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ../monitoring/grafana-alerting:/etc/grafana/provisioning/alerting:ro
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -156,6 +164,9 @@ services:
       - GF_SECURITY_X_CONTENT_TYPE_OPTIONS=true
       - GF_SECURITY_X_XSS_PROTECTION=true
       - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+      - GF_INSTALL_PLUGINS=grafana-oncall-app
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=grafana-oncall-app
+      - GF_FEATURE_TOGGLES_ENABLE=externalServiceAccounts
     security_opt:
       - no-new-privileges:true
     networks:
@@ -200,6 +211,57 @@ services:
         max-size: "10m"
         max-file: "2"
 
+  # ── Loki (Log Aggregation) ──────────────────────────────────
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: pgpclaw-loki
+    restart: unless-stopped
+    profiles: ["monitoring", "full"]
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ../monitoring/loki-config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/config.yml
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ── Promtail (Log Shipper) ──────────────────────────────────
+  promtail:
+    image: grafana/promtail:3.5.0
+    container_name: pgpclaw-promtail
+    restart: unless-stopped
+    profiles: ["monitoring", "full"]
+    volumes:
+      - ../monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    depends_on:
+      loki:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "2"
+
   # ── n8n (Workflow Automation) ───────────────────────────────
   n8n:
     image: n8nio/n8n:2.9.1
@@ -213,11 +275,100 @@ services:
     environment:
       - N8N_SECURE_COOKIE=true
       - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_METRICS=true
+      - N8N_METRICS_INCLUDE_DEFAULT_METRICS=true
+      - N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL=true
       - WEBHOOK_URL=http://localhost:5678/
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
     security_opt:
       - no-new-privileges:true
     networks:
       - pgpclaw-internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ── PDF Renderer (Headless Chrome for HTML→PDF) ────────────
+  pdf-renderer:
+    image: ghcr.io/browserless/chromium:latest
+    container_name: pgpclaw-pdf-renderer
+    restart: unless-stopped
+    profiles: ["monitoring", "full"]
+    environment:
+      - TOKEN=sas-pdf-token
+      - CONCURRENT=2
+      - TIMEOUT=30000
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "2"
+
+  # ── OnCall Redis (Celery broker — separate from nango-redis) ─
+  oncall-redis:
+    image: redis:7-alpine
+    container_name: pgpclaw-oncall-redis
+    restart: unless-stopped
+    profiles: ["monitoring", "full"]
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - pgpclaw-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  # ── Grafana OnCall Engine ───────────────────────────────────
+  oncall:
+    image: grafana/oncall:latest
+    container_name: pgpclaw-oncall
+    restart: unless-stopped
+    profiles: ["monitoring", "full"]
+    ports:
+      - "127.0.0.1:8090:8080"   # 8080 taken by msd-api-tracker
+    volumes:
+      - oncall_data:/var/lib/oncall
+    environment:
+      - BASE_URL=http://localhost:3000
+      - SECRET_KEY=${ONCALL_SECRET_KEY:-change-me-must-be-32chars-minimum}
+      - REDIS_URI=redis://pgpclaw-oncall-redis:6379/0
+      - DATABASE_TYPE=sqlite3
+      - DJANGO_SETTINGS_MODULE=settings.hobby
+      - BROKER_TYPE=redis
+      - GRAFANA_API_URL=http://pgpclaw-grafana:3000
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pgpclaw-internal
+    depends_on:
+      oncall-redis:
+        condition: service_healthy
+      grafana:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     logging:
       driver: "json-file"
       options:
@@ -342,6 +493,8 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  loki_data:
+  oncall_data:
   n8n_data:
   openbao_data:
   openbao_audit:
