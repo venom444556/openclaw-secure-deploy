@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The Commission — Audit Pipe Daemon
+  Converts BSM binary audit events to text for Vector ingestion.
+  Requires root (auditpipe access).
+
+  Install: sudo cp launchd/com.thecommission.auditpipe.plist /Library/LaunchDaemons/
+  Load:    sudo launchctl load /Library/LaunchDaemons/com.thecommission.auditpipe.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.thecommission.auditpipe</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__REPO_DIR__/scripts/start-auditpipe.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/commission-audit/daemon-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/commission-audit/daemon-stderr.log</string>
+
+    <key>UserName</key>
+    <string>root</string>
+</dict>
+</plist>
