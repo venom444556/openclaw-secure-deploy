@@ -1,0 +1,11 @@
+#
+# OpenBSM Audit Control — The Commission
+# Applied by scripts/setup-audit.sh (requires sudo)
+#
+dir:/var/audit
+flags:lo,ad,ex,fd,fm,fc,fw,na
+minfree:5
+naflags:lo,ad,ex
+policy:cnt,argv,arge
+filesz:10M
+expire-after:30d

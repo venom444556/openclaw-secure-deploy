@@ -1,0 +1,7 @@
+#
+# Per-user audit classes — The Commission
+# Only audit the service accounts, not every system user.
+# Applied by scripts/setup-audit.sh (requires sudo)
+#
+claude:lo,ad,ex,fd,fm,fc,fw:no
+secureclaw:lo,ad,ex,fd,fm,fc,fw:no
