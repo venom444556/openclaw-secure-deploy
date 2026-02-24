@@ -28,12 +28,10 @@ transforms:
     inputs:
       - docker_logs
     source: |
-      .service = get(.container_name) ?? "unknown"
       .source_type = "docker"
-      # Strip pgpclaw- prefix for cleaner labels
-      name = string!(.service)
-      if starts_with(name, "pgpclaw-") {
-        .service = slice!(name, 8)
+      .service = string!(.container_name)
+      if starts_with(.service, "pgpclaw-") {
+        .service = slice!(.service, 8)
       }
 
   bsm_parsed:
@@ -42,32 +40,37 @@ transforms:
       - bsm_audit
     source: |
       .source_type = "openbsm"
-      # Parse praudit XML-ish output for key fields
       msg = string!(.message)
 
-      # Extract event type (e.g., AUE_EXECVE, AUE_OPEN_RW)
-      event_match = parse_regex(msg, r'<event.*?modifier="(?P<event>[^"]+)"') ?? {}
-      .event_type = get(event_match, "event") ?? "unknown"
+      # Set defaults
+      .event_type = "unknown"
+      .uid = ""
+      .user = "system"
+      .path = ""
+      .process = ""
 
-      # Extract subject UID
-      uid_match = parse_regex(msg, r'<subject.*?uid="(?P<uid>\d+)"') ?? {}
-      uid_str = get(uid_match, "uid") ?? ""
-      .uid = uid_str
-      if uid_str == "599" {
-        .user = "claude"
-      } else if uid_str == "600" {
-        .user = "secureclaw"
-      } else {
-        .user = "system"
+      # Extract event type (e.g., AUE_EXECVE, AUE_OPEN_RW)
+      parsed, err = parse_regex(msg, r'<event.*?modifier="(?P<event>[^"]+)"')
+      if err == null { .event_type = string!(parsed.event) }
+
+      # Extract subject UID and map to username
+      parsed, err = parse_regex(msg, r'<subject.*?uid="(?P<uid>\d+)"')
+      if err == null {
+        .uid = string!(parsed.uid)
+        if .uid == "599" {
+          .user = "claude"
+        } else if .uid == "600" {
+          .user = "secureclaw"
+        }
       }
 
       # Extract path if present
-      path_match = parse_regex(msg, r'<path>(?P<path>[^<]+)</path>') ?? {}
-      .path = get(path_match, "path") ?? ""
+      parsed, err = parse_regex(msg, r'<path>(?P<path>[^<]+)</path>')
+      if err == null { .path = string!(parsed.path) }
 
       # Extract process name if present
-      proc_match = parse_regex(msg, r'<exec_args>.*?<arg>(?P<proc>[^<]+)</arg>') ?? {}
-      .process = get(proc_match, "proc") ?? ""
+      parsed, err = parse_regex(msg, r'<exec_args>.*?<arg>(?P<proc>[^<]+)</arg>')
+      if err == null { .process = string!(parsed.proc) }
 
 # ── Sinks ────────────────────────────────────────────────────
 
