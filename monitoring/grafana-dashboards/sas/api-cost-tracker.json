@@ -3,7 +3,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -21,23 +24,45 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 300,
       "title": "Cost Summary",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
-              { "color": "orange", "value": 15 },
-              { "color": "red", "value": 30 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "orange",
+                "value": 15
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -45,21 +70,35 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
       "id": 1,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Estimated Daily Cost",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_total_daily_usd",
           "legendFormat": "Daily",
           "refId": "A"
@@ -67,17 +106,34 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 150 },
-              { "color": "orange", "value": 450 },
-              { "color": "red", "value": 900 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 150
+              },
+              {
+                "color": "orange",
+                "value": 450
+              },
+              {
+                "color": "red",
+                "value": 900
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -85,14 +141,25 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
       "id": 2,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Projected Monthly Cost",
@@ -100,7 +167,10 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_total_daily_usd * 30",
           "legendFormat": "Monthly",
           "refId": "A"
@@ -108,14 +178,22 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#6C47FF", "value": null }
+              {
+                "color": "#6C47FF",
+                "value": null
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -123,21 +201,35 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
       "id": 3,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Anthropic (Daily)",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_daily_usd{provider=\"anthropic\"}",
           "legendFormat": "Anthropic",
           "refId": "A"
@@ -145,14 +237,22 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#10A37F", "value": null }
+              {
+                "color": "#10A37F",
+                "value": null
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -160,21 +260,35 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
       "id": 4,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "OpenAI (Daily)",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_daily_usd{provider=\"openai\"}",
           "legendFormat": "OpenAI",
           "refId": "A"
@@ -182,14 +296,22 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#4285F4", "value": null }
+              {
+                "color": "#4285F4",
+                "value": null
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -197,21 +319,35 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
       "id": 5,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "title": "Google CSE (Daily)",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_daily_usd{provider=\"google_cse\"}",
           "legendFormat": "Google CSE",
           "refId": "A"
@@ -220,16 +356,26 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
       "id": 301,
       "title": "Cost Trends",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisLabel": "Cost (USD)",
@@ -241,10 +387,15 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "auto",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "normal" },
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
             "thresholdsStyle": {
               "mode": "line+area"
             }
@@ -252,8 +403,14 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "transparent", "value": null },
-              { "color": "red", "value": 25 }
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -261,31 +418,83 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "anthropic" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#6C47FF", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "anthropic"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6C47FF",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "openai" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#10A37F", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "openai"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#10A37F",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "google_cse" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#4285F4", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "google_cse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4285F4",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 7 },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 7
+      },
       "id": 10,
       "options": {
-        "legend": { "calcs": ["sum", "mean", "lastNotNull"], "displayMode": "table", "placement": "right" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "sum",
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "title": "Estimated Daily API Cost Over Time",
       "description": "Stacked cost by provider with $25/day budget alert threshold (red line)",
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_daily_usd",
           "legendFormat": "{{provider}}",
           "refId": "A"
@@ -293,40 +502,108 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "anthropic" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#6C47FF", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "anthropic"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6C47FF",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "openai" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#10A37F", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "openai"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#10A37F",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "google_cse" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#4285F4", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "google_cse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4285F4",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 7 },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
       "id": 11,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "values": ["value", "percent"] },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
         "pieType": "donut",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "title": "Cost Breakdown by Provider",
       "type": "piechart",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_daily_usd",
           "legendFormat": "{{provider}}",
           "refId": "A"
@@ -335,16 +612,26 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
       "id": 302,
       "title": "Cost by Workflow",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisLabel": "Cost (USD)",
@@ -352,54 +639,83 @@
             "fillOpacity": 70,
             "gradientMode": "hue",
             "lineWidth": 1,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           },
           "unit": "currencyUSD",
           "decimals": 4
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
       "id": 20,
       "options": {
         "barRadius": 0.1,
         "barWidth": 0.6,
         "fullHighlight": false,
         "groupWidth": 0.7,
-        "legend": { "displayMode": "list", "placement": "bottom" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
         "orientation": "horizontal",
         "showValue": "always",
         "stacking": "normal",
-        "tooltip": { "mode": "multi", "sort": "desc" },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
         "xTickLabelRotation": 0
       },
       "title": "Cost Breakdown by Workflow & Provider",
       "type": "barchart",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_api_cost_estimated_usd{provider=\"anthropic\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_api_cost_estimated_usd{provider=\"anthropic\"}, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Anthropic",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_api_cost_estimated_usd{provider=\"openai\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_api_cost_estimated_usd{provider=\"openai\"}, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "OpenAI",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_api_cost_estimated_usd{provider=\"google_cse\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_api_cost_estimated_usd{provider=\"google_cse\"}, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Google CSE",
@@ -409,18 +725,32 @@
       "transformations": [
         {
           "id": "seriesToColumns",
-          "options": { "byField": "workflow_name" }
+          "options": {
+            "byField": "workflow_name"
+          }
         },
         {
           "id": "organize",
           "options": {
             "excludeByName": {
-              "Time 1": true, "Time 2": true, "Time 3": true,
-              "__name__ 1": true, "__name__ 2": true, "__name__ 3": true,
-              "instance 1": true, "instance 2": true, "instance 3": true,
-              "job 1": true, "job 2": true, "job 3": true,
-              "provider 1": true, "provider 2": true, "provider 3": true,
-              "workflow_id 1": true, "workflow_id 2": true, "workflow_id 3": true
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "__name__ 3": true,
+              "instance 1": true,
+              "instance 2": true,
+              "instance 3": true,
+              "job 1": true,
+              "job 2": true,
+              "job 3": true,
+              "provider 1": true,
+              "provider 2": true,
+              "provider 3": true,
+              "workflow_id 1": true,
+              "workflow_id 2": true,
+              "workflow_id 3": true
             },
             "renameByName": {
               "workflow_name": "Workflow",
@@ -433,17 +763,34 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 150 },
-              { "color": "orange", "value": 450 },
-              { "color": "red", "value": 900 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 150
+              },
+              {
+                "color": "orange",
+                "value": 450
+              },
+              {
+                "color": "red",
+                "value": 900
+              }
             ]
           },
           "unit": "currencyUSD",
@@ -453,13 +800,24 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
       "id": 21,
       "options": {
         "minVizHeight": 200,
         "minVizWidth": 200,
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": true,
         "showThresholdMarkers": true,
         "sizing": "auto"
@@ -469,7 +827,10 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_api_cost_total_daily_usd * 30",
           "legendFormat": "Projected Monthly",
           "refId": "A"
@@ -478,16 +839,26 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
       "id": 303,
       "title": "Token Usage & API Calls",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisLabel": "Tokens",
@@ -499,48 +870,122 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "auto",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           },
           "unit": "short"
         },
         "overrides": [
           {
-            "matcher": { "id": "byRegexp", "options": "/anthropic.*input/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#9B7FFF", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/anthropic.*input/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9B7FFF",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "/anthropic.*output/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#6C47FF", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/anthropic.*output/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6C47FF",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "/openai.*input/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#73D8A0", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/openai.*input/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73D8A0",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "/openai.*output/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#10A37F", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/openai.*output/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#10A37F",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 27 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
       "id": 30,
       "options": {
-        "legend": { "calcs": ["lastNotNull", "sum"], "displayMode": "table", "placement": "right" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "title": "Estimated Token Usage Over Time",
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_token_usage_estimated",
           "legendFormat": "{{provider}} {{direction}}",
           "refId": "A"
@@ -548,10 +993,15 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisLabel": "API Calls",
@@ -563,43 +1013,106 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "auto",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byRegexp", "options": "/anthropic/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#6C47FF", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/anthropic/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6C47FF",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "/openai/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#10A37F", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/openai/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#10A37F",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "/google_cse/" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#4285F4", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/google_cse/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4285F4",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 27 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
       "id": 31,
       "options": {
-        "legend": { "calcs": ["lastNotNull", "sum"], "displayMode": "table", "placement": "right" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "title": "Estimated API Calls by Provider (All Workflows)",
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "sum by (provider) (n8n_api_calls_total)",
           "legendFormat": "{{provider}}",
           "refId": "A"
@@ -608,90 +1121,189 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
       "id": 304,
       "title": "API Call Detail by Workflow",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           },
           "decimals": 0
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "workflow_name" },
-            "properties": [{ "id": "displayName", "value": "Workflow" }, { "id": "custom.width", "value": 220 }]
-          },
-          {
-            "matcher": { "id": "byRegexp", "options": "/Anthropic|OpenAI|Google/" },
-            "properties": [{ "id": "custom.width", "value": 130 }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Total Cost" },
+            "matcher": {
+              "id": "byName",
+              "options": "workflow_name"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 4 },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
-              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 2 }] } }
+              {
+                "id": "displayName",
+                "value": "Workflow"
+              },
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/Anthropic|OpenAI|Google/"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 130
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0.5
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 37 },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
       "id": 40,
       "options": {
         "showHeader": true,
         "cellHeight": "sm",
         "footer": {
           "show": true,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "countRows": false,
-          "fields": ["Anthropic Calls", "OpenAI Calls", "Google CSE Calls", "Total Cost"]
+          "fields": [
+            "Anthropic Calls",
+            "OpenAI Calls",
+            "Google CSE Calls",
+            "Total Cost"
+          ]
         },
-        "sortBy": [{ "displayName": "Total Cost", "desc": true }]
+        "sortBy": [
+          {
+            "displayName": "Total Cost",
+            "desc": true
+          }
+        ]
       },
       "title": "API Calls & Cost per Workflow (24h)",
       "type": "table",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_api_calls_total{provider=\"anthropic\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_api_calls_total{provider=\"anthropic\"}, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Anthropic",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_api_calls_total{provider=\"openai\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_api_calls_total{provider=\"openai\"}, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "OpenAI",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_api_calls_total{provider=\"google_cse\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_api_calls_total{provider=\"google_cse\"}, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Google CSE",
           "refId": "C"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "sum by (workflow_name) (n8n_api_cost_estimated_usd)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(sum by (workflow_name) (n8n_api_cost_estimated_usd), \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Total Cost",
@@ -701,18 +1313,37 @@
       "transformations": [
         {
           "id": "seriesToColumns",
-          "options": { "byField": "workflow_name" }
+          "options": {
+            "byField": "workflow_name"
+          }
         },
         {
           "id": "organize",
           "options": {
             "excludeByName": {
-              "Time 1": true, "Time 2": true, "Time 3": true, "Time 4": true,
-              "__name__ 1": true, "__name__ 2": true, "__name__ 3": true, "__name__ 4": true,
-              "instance 1": true, "instance 2": true, "instance 3": true, "instance 4": true,
-              "job 1": true, "job 2": true, "job 3": true, "job 4": true,
-              "provider 1": true, "provider 2": true, "provider 3": true,
-              "workflow_id 1": true, "workflow_id 2": true, "workflow_id 3": true, "workflow_id 4": true
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "__name__ 3": true,
+              "__name__ 4": true,
+              "instance 1": true,
+              "instance 2": true,
+              "instance 3": true,
+              "instance 4": true,
+              "job 1": true,
+              "job 2": true,
+              "job 3": true,
+              "job 4": true,
+              "provider 1": true,
+              "provider 2": true,
+              "provider 3": true,
+              "workflow_id 1": true,
+              "workflow_id 2": true,
+              "workflow_id 3": true,
+              "workflow_id 4": true
             },
             "renameByName": {
               "workflow_name": "Workflow",
@@ -735,12 +1366,35 @@
   ],
   "refresh": "1m",
   "schemaVersion": 39,
-  "tags": ["sas", "n8n", "api", "cost"],
-  "templating": { "list": [] },
-  "time": { "from": "now-24h", "to": "now" },
+  "tags": [
+    "sas",
+    "n8n",
+    "api",
+    "cost"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
   "timepicker": {
-    "refresh_intervals": ["30s", "1m", "5m", "15m"],
-    "time_options": ["1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    "refresh_intervals": [
+      "30s",
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "time_options": [
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
   },
   "timezone": "browser",
   "title": "SAS API Cost Tracker",

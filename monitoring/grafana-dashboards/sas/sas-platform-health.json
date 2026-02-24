@@ -1,14 +1,27 @@
 {
   "__inputs": [],
   "__requires": [
-    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "8.0.0" },
-    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "8.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
   ],
   "annotations": {
     "list": [
       {
         "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -26,30 +39,87 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "title": "Platform Health",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "UNREACHABLE" }, "1": { "color": "green", "index": 0, "text": "REACHABLE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "UNREACHABLE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "REACHABLE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
       "id": 2,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "title": "n8n Reachable",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_reachable",
           "legendFormat": "",
           "refId": "A"
@@ -57,24 +127,64 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
           "unit": "s",
           "max": 10,
           "min": 0
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
       "id": 3,
-      "options": { "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdLabels": false, "showThresholdMarkers": true },
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
       "title": "Proxy Scrape Duration",
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_proxy_scrape_duration_seconds",
           "legendFormat": "",
           "refId": "A"
@@ -82,25 +192,83 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "green", "index": 0, "text": "OK" } }, "type": "value" },
-            { "options": { "from": 1, "result": { "color": "red", "index": 1, "text": "ERRORS" }, "to": 1000 }, "type": "range" }
+            {
+              "options": {
+                "0": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "OK"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "ERRORS"
+                },
+                "to": 1000
+              },
+              "type": "range"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
       "id": 4,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "title": "Proxy Scrape Errors",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_proxy_scrape_errors_total",
           "legendFormat": "",
           "refId": "A"
@@ -108,22 +276,64 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 6 }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 6
+              }
+            ]
+          },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
       "id": 5,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "title": "Active Workflows",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "sum(n8n_workflow_active)",
           "legendFormat": "",
           "refId": "A"
@@ -131,25 +341,83 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "green", "index": 0, "text": "ALL OK" } }, "type": "value" },
-            { "options": { "from": 1, "result": { "color": "red", "index": 1, "text": "BROKEN" }, "to": 100 }, "type": "range" }
+            {
+              "options": {
+                "0": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ALL OK"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "BROKEN"
+                },
+                "to": 100
+              },
+              "type": "range"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
       "id": 6,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "title": "Broken Links",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "count(n8n_cross_workflow_link_health == 0) or vector(0)",
           "legendFormat": "",
           "refId": "A"
@@ -157,55 +425,153 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.05 }, { "color": "red", "value": 0.15 }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.05
+              },
+              {
+                "color": "red",
+                "value": 0.15
+              }
+            ]
+          },
           "unit": "percentunit"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
       "id": 7,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "title": "Overall Error Rate (24h)",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "avg(n8n_error_rate)",
           "legendFormat": "",
           "refId": "A"
         }
       ]
     },
-
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 10,
       "title": "Workflow Active Status",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "INACTIVE" }, "1": { "color": "green", "index": 0, "text": "ACTIVE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "INACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ACTIVE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 6
+      },
       "id": 11,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
       "title": "Newsletter Engine",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_workflow_active{workflow_id=\"1\"}",
           "legendFormat": "Newsletter",
           "refId": "A"
@@ -213,24 +579,76 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "INACTIVE" }, "1": { "color": "green", "index": 0, "text": "ACTIVE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "INACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ACTIVE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 6 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 6
+      },
       "id": 12,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
       "title": "Telegram Gateway",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_workflow_active{workflow_id=\"sas-gateway\"}",
           "legendFormat": "Telegram Gateway",
           "refId": "A"
@@ -238,24 +656,76 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "INACTIVE" }, "1": { "color": "green", "index": 0, "text": "ACTIVE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "INACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ACTIVE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 6 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 6
+      },
       "id": 13,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
       "title": "Editorial Review",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_workflow_active{workflow_id=\"sas-editor\"}",
           "legendFormat": "Editorial Review",
           "refId": "A"
@@ -263,24 +733,76 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "INACTIVE" }, "1": { "color": "green", "index": 0, "text": "ACTIVE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "INACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ACTIVE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 6 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 6
+      },
       "id": 14,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
       "title": "Tip Sheet Engine",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_workflow_active{workflow_id=\"sas-tipsheet\"}",
           "legendFormat": "Tip Sheet Engine",
           "refId": "A"
@@ -288,24 +810,76 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "INACTIVE" }, "1": { "color": "green", "index": 0, "text": "ACTIVE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "INACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ACTIVE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 6 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 6
+      },
       "id": 15,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
       "title": "White Paper Engine",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_workflow_active{workflow_id=\"sas-whitepaper\"}",
           "legendFormat": "White Paper Engine",
           "refId": "A"
@@ -313,73 +887,248 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "INACTIVE" }, "1": { "color": "green", "index": 0, "text": "ACTIVE" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "INACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ACTIVE"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 6 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 6
+      },
       "id": 16,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
       "title": "LinkedIn Engine",
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_workflow_active{workflow_id=\"sas-linkedin\"}",
           "legendFormat": "LinkedIn Engine",
           "refId": "A"
         }
       ]
     },
-
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
       "id": 20,
       "title": "Last Execution",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 1 }, { "color": "green", "value": 1 }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
           "unit": "dateTimeFromNow",
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Never",
+                  "color": "text",
+                  "index": 0
+                }
+              }
+            }
+          ]
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "workflow_name" },
-            "properties": [{ "id": "displayName", "value": "Workflow" }, { "id": "custom.width", "value": 280 }]
+            "matcher": {
+              "id": "byName",
+              "options": "workflow_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Workflow"
+              },
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [{ "id": "displayName", "value": "Last Success" }, { "id": "unit", "value": "dateTimeFromNow" }, { "id": "custom.width", "value": 160 },
-              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } }
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Last Success"
+              },
+              {
+                "id": "unit",
+                "value": "dateTimeFromNow"
+              },
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
       "id": 21,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "Last Success" }] },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Last Success"
+          }
+        ]
+      },
       "title": "Last Successful Execution",
       "transformations": [
-        { "id": "labelsToFields", "options": { "mode": "columns", "valueLabel": "workflow_name" } },
-        { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "workflow_name"
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ]
+          }
+        }
       ],
       "type": "table",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_last_success_timestamp * 1000",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_last_success_timestamp, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\") * 1000",
           "legendFormat": "{{workflow_name}}",
           "refId": "A",
           "instant": true
@@ -387,117 +1136,390 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "unit": "dateTimeFromNow",
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Never",
+                  "color": "text",
+                  "index": 0
+                }
+              }
+            }
+          ]
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "workflow_name" },
-            "properties": [{ "id": "displayName", "value": "Workflow" }, { "id": "custom.width", "value": 280 }]
+            "matcher": {
+              "id": "byName",
+              "options": "workflow_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Workflow"
+              },
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [{ "id": "displayName", "value": "Last Error" }, { "id": "unit", "value": "dateTimeFromNow" }, { "id": "custom.width", "value": 160 },
-              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } },
-              { "id": "color", "value": { "mode": "thresholds" } }
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Last Error"
+              },
+              {
+                "id": "unit",
+                "value": "dateTimeFromNow"
+              },
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
       "id": 22,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "Last Error" }] },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Last Error"
+          }
+        ]
+      },
       "title": "Last Error",
       "transformations": [
-        { "id": "labelsToFields", "options": { "mode": "columns", "valueLabel": "workflow_name" } },
-        { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "workflow_name"
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ]
+          }
+        }
       ],
       "type": "table",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_last_error_timestamp * 1000",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_last_error_timestamp, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\") * 1000",
           "legendFormat": "{{workflow_name}}",
           "refId": "A",
           "instant": true
         }
       ]
     },
-
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
       "id": 30,
       "title": "Error Rates",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.05 }, { "color": "red", "value": 0.15 }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.05
+              },
+              {
+                "color": "red",
+                "value": 0.15
+              }
+            ]
+          },
           "unit": "percentunit",
           "min": 0,
           "max": 1
         }
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
       "id": 31,
-      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "valueMode": "color" },
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
       "title": "Error Rate by Workflow (24h)",
       "type": "bargauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
-          "expr": "n8n_error_rate",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
+          "expr": "label_replace(n8n_error_rate, \"workflow_name\", \"$1\", \"workflow_name\", \"^SAS (?:Cyber Advisory|Editor) (?:— )?(.+)$\")",
           "legendFormat": "{{workflow_name}}",
           "refId": "A",
           "instant": true
         }
       ]
     },
-
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
       "id": 40,
       "title": "Cross-Workflow Link Health",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sas-prometheus-ds"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "BROKEN" }, "1": { "color": "green", "index": 0, "text": "OK" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "BROKEN"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "OK"
+                }
+              },
+              "type": "value"
+            }
           ],
-          "custom": { "align": "auto", "cellOptions": { "type": "color-background", "mode": "gradient" }, "inspect": false }
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-background",
+              "mode": "gradient"
+            },
+            "inspect": false
+          }
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "link_name" }, "properties": [{ "id": "displayName", "value": "Link" }, { "id": "custom.width", "value": 280 }] },
-          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Status" }, { "id": "custom.width", "value": 100 }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "link_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Link"
+              },
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Status"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
         ]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 29 },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
       "id": 41,
-      "options": { "cellHeight": "sm", "footer": { "countRows": true, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": false, "displayName": "Status" }] },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": true,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Status"
+          }
+        ]
+      },
       "title": "Cross-Workflow Link Health (9 links)",
       "transformations": [
-        { "id": "labelsToFields", "options": { "mode": "columns", "valueLabel": "link_name" } },
-        { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "link_name"
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ]
+          }
+        }
       ],
       "type": "table",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "sas-prometheus-ds" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sas-prometheus-ds"
+          },
           "expr": "n8n_cross_workflow_link_health",
           "legendFormat": "{{link_name}}",
           "refId": "A",
@@ -508,9 +1530,19 @@
   ],
   "refresh": "1m",
   "schemaVersion": 38,
-  "tags": ["sas", "n8n", "health", "workflows"],
-  "templating": { "list": [] },
-  "time": { "from": "now-24h", "to": "now" },
+  "tags": [
+    "sas",
+    "n8n",
+    "health",
+    "workflows"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "browser",
   "title": "SAS Platform Health",
