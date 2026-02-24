@@ -1,0 +1,83 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Commission Audit Alerts
+    folder: Commission
+    interval: 1m
+    rules:
+      - uid: commission-system-binary-exec
+        title: "System Binary Execution"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki-ds
+            model:
+              expr: 'count_over_time({source="openbsm", event_type=~"AUE_EXEC.*"} |~ "/etc/|/usr/|/System/" [5m])'
+        for: 0s
+        labels:
+          severity: critical
+          service: commission
+        annotations:
+          summary: "Service account executed system binary"
+          description: "An exec event touching /etc, /usr, or /System was detected from a Commission service account."
+
+      - uid: commission-priv-escalation
+        title: "Privilege Escalation Attempt"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki-ds
+            model:
+              expr: 'count_over_time({source="openbsm", event_type=~"AUE_EXEC.*"} |~ "sudo|su |doas" [5m])'
+        for: 0s
+        labels:
+          severity: critical
+          service: commission
+        annotations:
+          summary: "Privilege escalation detected"
+          description: "A sudo/su/doas command was executed by a Commission service account."
+
+      - uid: commission-file-write-outside-sandbox
+        title: "File Write Outside Sandbox"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki-ds
+            model:
+              expr: 'count_over_time({source="openbsm", event_type=~"AUE_OPEN_W.*|AUE_WRITE.*"} !~ "/Users/.*/Documents|/tmp/|/var/folders" [5m])'
+        for: 0s
+        labels:
+          severity: high
+          service: commission
+        annotations:
+          summary: "File write outside expected directories"
+          description: "A service account wrote to a path outside ~/Documents, /tmp, or /var/folders."
+
+      - uid: commission-exec-storm
+        title: "Exec Storm (Agent Runaway)"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: loki-ds
+            model:
+              expr: 'count_over_time({source="openbsm", event_type=~"AUE_EXEC.*"} [1m]) > 50'
+        for: 2m
+        labels:
+          severity: warning
+          service: commission
+        annotations:
+          summary: "High exec frequency detected"
+          description: "More than 50 exec events per minute from a service account — possible agent runaway."
