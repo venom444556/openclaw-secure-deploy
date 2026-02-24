@@ -1,5 +1,5 @@
 # Vector — Unified log shipper for The Commission observability stack
-# Replaces Promtail. Ships Docker container logs + OpenBSM audit logs to Loki.
+# Replaces Promtail. Ships Docker container logs + eslogger audit events to Loki.
 
 api:
   enabled: true
@@ -12,7 +12,7 @@ sources:
     type: docker_logs
     docker_host: "unix:///var/run/docker.sock"
 
-  bsm_audit:
+  es_audit:
     type: file
     include:
       - /var/log/commission-audit/audit.log
@@ -34,12 +34,13 @@ transforms:
         .service = slice!(.service, 8)
       }
 
-  bsm_parsed:
+  audit_parsed:
     type: remap
     inputs:
-      - bsm_audit
+      - es_audit
+    drop_on_abort: false
     source: |
-      .source_type = "openbsm"
+      .source_type = "eslogger"
       msg = string!(.message)
 
       # Set defaults
@@ -49,28 +50,56 @@ transforms:
       .path = ""
       .process = ""
 
-      # Extract event type (e.g., AUE_EXECVE, AUE_OPEN_RW)
-      parsed, err = parse_regex(msg, r'<event.*?modifier="(?P<event>[^"]+)"')
-      if err == null { .event_type = string!(parsed.event) }
-
-      # Extract subject UID and map to username
-      parsed, err = parse_regex(msg, r'<subject.*?uid="(?P<uid>\d+)"')
+      # eslogger outputs JSON — parse it
+      parsed, err = parse_json(msg)
       if err == null {
-        .uid = string!(parsed.uid)
-        if .uid == "599" {
-          .user = "claude"
-        } else if .uid == "600" {
-          .user = "secureclaw"
+        # Event type — eslogger uses integers (e.g. 9=exec), convert to string
+        et = parsed.event_type
+        if et != null { .event_type = to_string!(et) }
+
+        # Extract UID from process info
+        proc_info = parsed.process
+        if proc_info != null {
+          audit_token = proc_info.audit_token
+          if audit_token != null {
+            uid_val = audit_token.euid
+            if uid_val != null {
+              .uid = to_string!(uid_val)
+              if .uid == "599" {
+                .user = "claude"
+              } else if .uid == "600" {
+                .user = "secureclaw"
+              }
+            }
+          }
+          # Process executable path
+          exe = proc_info.executable
+          if exe != null {
+            exe_path = exe.path
+            if exe_path != null { .process = to_string!(exe_path) }
+          }
+        }
+
+        # Extract file path from event-specific data
+        event_data = parsed.event
+        if event_data != null {
+          # For exec events
+          target = event_data.target
+          if target != null {
+            exec_path = target.executable
+            if exec_path != null {
+              ep = exec_path.path
+              if ep != null { .path = to_string!(ep) }
+            }
+          }
+          # For file events (open, write, rename, unlink)
+          file_info = event_data.file
+          if file_info != null {
+            fp = file_info.path
+            if fp != null { .path = to_string!(fp) }
+          }
         }
       }
-
-      # Extract path if present
-      parsed, err = parse_regex(msg, r'<path>(?P<path>[^<]+)</path>')
-      if err == null { .path = string!(parsed.path) }
-
-      # Extract process name if present
-      parsed, err = parse_regex(msg, r'<exec_args>.*?<arg>(?P<proc>[^<]+)</arg>')
-      if err == null { .process = string!(parsed.proc) }
 
 # ── Sinks ────────────────────────────────────────────────────
 
@@ -90,10 +119,10 @@ sinks:
   loki_audit:
     type: loki
     inputs:
-      - bsm_parsed
+      - audit_parsed
     endpoint: "http://pgpclaw-loki:3100"
     labels:
-      source: "openbsm"
+      source: "eslogger"
       user: "{{ user }}"
       event_type: "{{ event_type }}"
       service: "commission-audit"

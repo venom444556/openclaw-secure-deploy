@@ -1,7 +1,14 @@
 #!/bin/bash
-# start-auditpipe.sh — Continuously convert BSM binary audit to text
-# Run by launchd, writes to /var/log/commission-audit/audit.log
-# The praudit -lx flag outputs one-line XML per event
+# start-auditpipe.sh — Capture audit events for Commission service accounts
+# Run by launchd as root, writes to /var/log/commission-audit/audit.log
+#
+# Uses eslogger (Endpoint Security, macOS 13+) instead of OpenBSM praudit
+# because SIP blocks auditd on modern macOS.
+# Output: one JSON object per line, filtered to UIDs 599 (claude) and 600 (secureclaw).
+#
+# Prerequisites:
+#   - /bin/bash must have Full Disk Access (System Settings → Privacy & Security)
+#   - /usr/bin/eslogger must have Full Disk Access
 
 set -euo pipefail
 
@@ -10,8 +17,9 @@ LOG_FILE="$LOG_DIR/audit.log"
 
 mkdir -p "$LOG_DIR"
 
-# Filter for only our users (claude=599, secureclaw=600)
-# praudit converts binary BSM to readable text
-# We grep for our UIDs to avoid system noise
-exec praudit -lx /dev/auditpipe 2>/dev/null | \
-    grep -E '"599"|"600"' >> "$LOG_FILE"
+# eslogger outputs JSON events to stdout
+# Subscribe to: exec, open, write, rename, unlink, signal
+# Filter for our service account UIDs only
+# eslogger JSON uses "euid", "ruid", "auid" — not bare "uid"
+exec eslogger exec open write rename unlink signal 2>/dev/null | \
+    grep --line-buffered -E '"[era]uid"\s*:\s*(599|600)' >> "$LOG_FILE"
