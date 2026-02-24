@@ -1,0 +1,120 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Exec Events by User",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (user) (count_over_time({source=\"openbsm\", event_type=~\"AUE_EXEC.*\"} [5m]))",
+          "legendFormat": "{{user}}"
+        }
+      ]
+    },
+    {
+      "title": "File Write Events by User",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (user) (count_over_time({source=\"openbsm\", event_type=~\"AUE_OPEN_W.*|AUE_WRITE.*\"} [5m]))",
+          "legendFormat": "{{user}}"
+        }
+      ]
+    },
+    {
+      "title": "All Audit Events (Log Stream)",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "{source=\"openbsm\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "title": "Top Processes (claude)",
+      "type": "table",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (process) (count_over_time({source=\"openbsm\", user=\"claude\"} | json | process != \"\" [1h])))",
+          "legendFormat": "{{process}}"
+        }
+      ]
+    },
+    {
+      "title": "Top Processes (secureclaw)",
+      "type": "table",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (process) (count_over_time({source=\"openbsm\", user=\"secureclaw\"} | json | process != \"\" [1h])))",
+          "legendFormat": "{{process}}"
+        }
+      ]
+    },
+    {
+      "title": "Event Types Distribution",
+      "type": "piechart",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "targets": [
+        {
+          "expr": "sum by (event_type) (count_over_time({source=\"openbsm\"} [1h]))",
+          "legendFormat": "{{event_type}}"
+        }
+      ]
+    },
+    {
+      "title": "Docker Container Logs Volume",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki-ds" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "targets": [
+        {
+          "expr": "sum by (service) (count_over_time({source=\"docker\"} [5m]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["commission", "audit", "security"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Commission — Audit Overview",
+  "uid": "commission-audit",
+  "version": 1
+}
