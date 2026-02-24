@@ -6,7 +6,8 @@ providers:
     folder: Commission
     type: file
     disableDeletion: false
+    editable: true
     updateIntervalSeconds: 30
     options:
       path: /etc/grafana/provisioning/dashboards/commission
-      foldersFromFilesStructure: true
+      foldersFromFilesStructure: false
