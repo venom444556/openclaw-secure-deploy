@@ -325,6 +325,7 @@ services:
     container_name: pgpclaw-oncall-redis
     restart: unless-stopped
     profiles: ["monitoring", "full"]
+    user: "999:999"
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
     security_opt:
       - no-new-privileges:true
