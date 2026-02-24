@@ -239,16 +239,17 @@ services:
         max-size: "50m"
         max-file: "3"
 
-  # ── Promtail (Log Shipper) ──────────────────────────────────
-  promtail:
-    image: grafana/promtail:3.5.0
-    container_name: pgpclaw-promtail
+  # ── Vector (Log Shipper — replaces Promtail) ──────────────────
+  vector:
+    image: timberio/vector:0.45.0-alpine
+    container_name: pgpclaw-vector
     restart: unless-stopped
     profiles: ["monitoring", "full"]
     volumes:
-      - ../monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ../monitoring/vector.yml:/etc/vector/vector.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: -config.file=/etc/promtail/config.yml
+      - /var/log/commission-audit:/var/log/commission-audit:ro
+    command: --config /etc/vector/vector.yml
     security_opt:
       - no-new-privileges:true
     networks:
@@ -256,6 +257,12 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "vector", "top", "--interval", "1", "--human-metrics", "false"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     logging:
       driver: "json-file"
       options:

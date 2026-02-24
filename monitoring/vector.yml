@@ -1,0 +1,98 @@
+# Vector — Unified log shipper for The Commission observability stack
+# Replaces Promtail. Ships Docker container logs + OpenBSM audit logs to Loki.
+
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+
+# ── Sources ──────────────────────────────────────────────────
+
+sources:
+  docker_logs:
+    type: docker_logs
+    docker_host: "unix:///var/run/docker.sock"
+
+  bsm_audit:
+    type: file
+    include:
+      - /var/log/commission-audit/audit.log
+    read_from: beginning
+    fingerprint:
+      strategy: device_and_inode
+
+# ── Transforms ───────────────────────────────────────────────
+
+transforms:
+  docker_enriched:
+    type: remap
+    inputs:
+      - docker_logs
+    source: |
+      .service = get(.container_name) ?? "unknown"
+      .source_type = "docker"
+      # Strip pgpclaw- prefix for cleaner labels
+      name = string!(.service)
+      if starts_with(name, "pgpclaw-") {
+        .service = slice!(name, 8)
+      }
+
+  bsm_parsed:
+    type: remap
+    inputs:
+      - bsm_audit
+    source: |
+      .source_type = "openbsm"
+      # Parse praudit XML-ish output for key fields
+      msg = string!(.message)
+
+      # Extract event type (e.g., AUE_EXECVE, AUE_OPEN_RW)
+      event_match = parse_regex(msg, r'<event.*?modifier="(?P<event>[^"]+)"') ?? {}
+      .event_type = get(event_match, "event") ?? "unknown"
+
+      # Extract subject UID
+      uid_match = parse_regex(msg, r'<subject.*?uid="(?P<uid>\d+)"') ?? {}
+      uid_str = get(uid_match, "uid") ?? ""
+      .uid = uid_str
+      if uid_str == "599" {
+        .user = "claude"
+      } else if uid_str == "600" {
+        .user = "secureclaw"
+      } else {
+        .user = "system"
+      }
+
+      # Extract path if present
+      path_match = parse_regex(msg, r'<path>(?P<path>[^<]+)</path>') ?? {}
+      .path = get(path_match, "path") ?? ""
+
+      # Extract process name if present
+      proc_match = parse_regex(msg, r'<exec_args>.*?<arg>(?P<proc>[^<]+)</arg>') ?? {}
+      .process = get(proc_match, "proc") ?? ""
+
+# ── Sinks ────────────────────────────────────────────────────
+
+sinks:
+  loki_docker:
+    type: loki
+    inputs:
+      - docker_enriched
+    endpoint: "http://pgpclaw-loki:3100"
+    labels:
+      source: "docker"
+      service: "{{ service }}"
+      stream: "{{ stream }}"
+    encoding:
+      codec: text
+
+  loki_audit:
+    type: loki
+    inputs:
+      - bsm_parsed
+    endpoint: "http://pgpclaw-loki:3100"
+    labels:
+      source: "openbsm"
+      user: "{{ user }}"
+      event_type: "{{ event_type }}"
+      service: "commission-audit"
+    encoding:
+      codec: text
